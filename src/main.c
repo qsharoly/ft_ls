@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/03/10 22:44:04 by debby            ###   ########.fr       */
+/*   Updated: 2021/03/10 23:00:48 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -302,12 +302,10 @@ void	list_path(const char *path, int depth, int options)
 				ft_printf("%s\t", about[i]->name);
 			i++;
 		}
-		if (!(options & LS_RECURSE))
-			return ;
 		i = 0;
 		while (i < count)
 		{
-			if ((about[i]->info.st_mode & S_IFDIR)
+			if ((options & LS_RECURSE) && (about[i]->info.st_mode & S_IFDIR)
 				&& !(ft_strequ(about[i]->name, ".") || ft_strequ(about[i]->name, "..")))
 			{
 				ft_printf("\n\n");
