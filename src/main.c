@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/03/10 23:00:48 by debby            ###   ########.fr       */
+/*   Updated: 2021/03/20 08:08:57 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,14 +17,16 @@
 #define MAX_DEPTH 25
 #define MAX_WIDTH 1000
 
-#define BLOCK_MAGIC 2
+#define BLOCK_HACK 2
 
-#define LS_LIST_ALL 1
-#define LS_LONG_INFO 2
-#define LS_SORT_REVERSE 4
-#define LS_RECURSE 8
-#define LS_SORT_TIME 16
-#define HAS_FILENAMES 32
+#define HAS_FILENAMES 1
+#define LS_LIST_ALL 2
+#define LS_LONG_INFO 4
+#define LS_SORT_REVERSE 8
+#define LS_RECURSE 16
+#define LS_SORT_BY_TIME 32
+#define LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS 64
+
 
 static void	print_help()
 {
@@ -39,6 +41,7 @@ static void	print_help()
 		"  -r\t\treverse order while sorting\n"
 		"  -R\t\tlist subdirectories recursively\n"
 		"  -t\t\tsort by modification time, newest first\n"
+		"  -x\t\tlist by lines instead of columns\n"
 		"      --help\tdisplay this help and exit\n"
 		"\n"
 		"Exit status:\n"
@@ -80,7 +83,9 @@ static unsigned	parse_all_options(int argc, const char **argv)
 				else if (c == 'R')
 					options |= LS_RECURSE;
 				else if (c == 't')
-					options |= LS_SORT_TIME;
+					options |= LS_SORT_BY_TIME;
+				else if (c == 'x')
+					options |= LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS;
 				else
 				{
 					ft_printf("ft_ls: invalid option -- '%c'\n", c);
@@ -98,6 +103,7 @@ static unsigned	parse_all_options(int argc, const char **argv)
 }
 
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <dirent.h>
 #include <string.h>
 #include <stdio.h>
@@ -254,7 +260,7 @@ void	list_path(const char *path, int depth, int options)
 		 * sort() here
 		 */
 		sorting = alpha;
-		if (options & LS_SORT_TIME)
+		if (options & LS_SORT_BY_TIME)
 			sorting = mtime;
 		if (options & LS_SORT_REVERSE)
 		{
@@ -270,11 +276,30 @@ void	list_path(const char *path, int depth, int options)
 			if (count > 1)
 				ft_printf("\n");
 		}
+		struct winsize	winsize;
+		int				ncol;
 		if (options & LS_LONG_INFO)
-			ft_printf("total %lu", tot_blocks / BLOCK_MAGIC);
+		{
+			ft_printf("total %lu", tot_blocks / BLOCK_HACK);
+		}
+		else
+		{
+			/*
+			 * TODO(qsharoly): match output column widths of ls
+			 */
+			if (-1 == ioctl(0, TIOCGWINSZ, &winsize))
+			{
+				perror("ft_ls: failed to get terminal dimesions");
+				exit(2);
+			}
+			ncol = winsize.ws_col / max_name;
+		}
 		i = 0;
 		while (i < count)
 		{
+			/*
+			 * TODO(qsharoly): print user_name and group
+			 */
 			if (options & LS_LONG_INFO)
 			{
 				mode_t	mode = about[i]->info.st_mode;
@@ -289,17 +314,33 @@ void	list_path(const char *path, int depth, int options)
 				perms[8] = mode & S_IWOTH ? 'w' : '-';
 				perms[9] = mode & S_IXOTH ? 'x' : '-';
 				perms[10] = '\0';
-				size_t nlnk = about[i]->info.st_nlink;
-				size_t siz = about[i]->info.st_size;
+				size_t nlink = about[i]->info.st_nlink;
+				size_t fsize = about[i]->info.st_size;
 				char *tim = ctime(&(about[i]->info.st_mtime));
 				tim = ft_strchr(tim, ' ') + 1;
 				char *timfin = ft_strrchr(tim, ':');
 				*timfin = '\0';
 				char *nam = about[i]->name;
-				ft_printf("\n%s %*lu %*lu %s %-*s", perms, max_lnk - 1, nlnk, max_size - 1, siz, tim, max_name, nam);
+				ft_printf("\n%s %*lu %*lu %s %-*s", perms, max_lnk - 1, nlink, max_size - 1, fsize, tim, max_name, nam);
 			}
 			else
-				ft_printf("%s\t", about[i]->name);
+			{
+				if (options & LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS)
+				{
+
+					ft_printf("%-*s", max_name, about[i]->name);
+				}
+				else
+				{
+					int	tabindex;
+
+					tabindex = i / ncol + (count / ncol + 1) * (i % ncol);
+					if (tabindex < count)
+						ft_printf("%-*s", max_name, about[tabindex]->name);
+				}
+				if (0 == (i + 1) % ncol)
+					ft_printf("\n");
+			}
 			i++;
 		}
 		i = 0;
