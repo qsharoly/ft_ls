@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/03/20 10:54:09 by debby            ###   ########.fr       */
+/*   Updated: 2021/03/20 11:09:01 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -377,6 +377,8 @@ void	list_path(const char *path, int depth, int options)
 			}
 			free(about[i]->name);
 			free(about[i]->fullpath);
+			free(about[i]->owner);
+			free(about[i]->group);
 			free(about[i]);
 			i++;
 		}
