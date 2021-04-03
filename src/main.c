@@ -6,33 +6,23 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/03/20 11:09:01 by debby            ###   ########.fr       */
+/*   Updated: 2021/04/03 04:08:09 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_ls.h"
 #include "libft.h"
 #include "libftprintf.h"
-
-#define STARTING_DEPTH 0
-#define MAX_DEPTH 25
-#define MAX_WIDTH 1000
-
-#define BLOCK_HACK 2
-
-#define HAS_FILENAMES 1
-#define LS_LIST_ALL (1<<1)
-#define LS_LONG_INFO (1<<2)
-#define LS_SORT_REVERSE (1<<3)
-#define LS_RECURSE (1<<4)
-#define LS_SORT_BY_TIME (1<<5)
-#define LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS (1<<6)
-
-enum e_exitcode
-{
-	Success = 0,
-	Fail_minor = 1,
-	Fail_serious = 2,
-};
+#include <stdlib.h> //malloc(), free(), exit()
+#include <sys/stat.h> //struct stat, stat()
+#include <sys/ioctl.h> //struct winsize, ioctl()
+#include <dirent.h> //readdir(), opendir(), closedir()
+#include <string.h> //strerror()
+#include <errno.h> //strerror()
+#include <stdio.h> //perror()
+#include <time.h> //ctime()
+#include <pwd.h> //getpwuid()
+#include <grp.h> //getgrgid()
 
 static void	print_help()
 {
@@ -83,7 +73,7 @@ static unsigned	parse_all_options(int argc, const char **argv)
 				if (c == 'a')
 					options |= LS_LIST_ALL;
 				else if (c == 'l')
-					options |= LS_LONG_INFO;
+					options |= LS_VERBOSE;
 				else if (c == 'r')
 					options |= LS_SORT_REVERSE;
 				else if (c == 'R')
@@ -108,16 +98,6 @@ static unsigned	parse_all_options(int argc, const char **argv)
 	return (options);
 }
 
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <dirent.h>
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
-#include <time.h>
-#include <pwd.h>
-#include <grp.h>
-
 char	*patcat(const char *path, const char *name)
 {
 	char	*str;
@@ -133,15 +113,6 @@ char	*patcat(const char *path, const char *name)
 	ft_strcat(str, name);
 	return (str);
 }
-
-struct		s_finfo
-{
-	struct stat		info;
-	char			*name;
-	char			*fullpath;
-	char			*owner;
-	char			*group;
-};
 
 int		alpha(const void *l, const void *r)
 {
@@ -170,7 +141,7 @@ int		mtime(const void *l, const void *r)
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	return (right->info.st_mtime - left->info.st_mtime);
+	return (right->status.st_mtime - left->status.st_mtime);
 }
 
 int		rev_mtime(const void *l, const void *r)
@@ -180,7 +151,7 @@ int		rev_mtime(const void *l, const void *r)
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	return (-(right->info.st_mtime - left->info.st_mtime));
+	return (-(right->status.st_mtime - left->status.st_mtime));
 }
 
 size_t	n_digits(size_t val)
@@ -205,29 +176,74 @@ void	my_assert(int condition, const char *message, enum e_exitcode code)
 	}
 }
 
+static void	print_verbose_info(struct s_finfo	*f, struct s_col_widths cols)
+{
+	mode_t	mode;
+	char	perms[11];
+
+	mode = f->status.st_mode;
+	perms[0] = '?';
+	if (S_ISREG(mode))
+		perms[0] = '-';
+	else if (S_ISBLK(mode))
+		perms[0] = 'b';
+	else if (S_ISCHR(mode))
+		perms[0] = 'c';
+	else if (S_ISDIR(mode))
+		perms[0] = 'd';
+	else if (S_ISLNK(mode))
+		perms[0] = 'l';
+	else if (S_ISFIFO(mode))
+		perms[0] = 'p';
+	else if (S_ISSOCK(mode))
+		perms[0] = 's';
+	perms[1] = mode & S_IRUSR ? 'r' : '-';
+	perms[2] = mode & S_IWUSR ? 'w' : '-';
+	perms[3] = mode & S_IXUSR ? 'x' : '-';
+	perms[4] = mode & S_IRGRP ? 'r' : '-';
+	perms[5] = mode & S_IWGRP ? 'w' : '-';
+	perms[6] = mode & S_IXGRP ? 'x' : '-';
+	perms[7] = mode & S_IROTH ? 'r' : '-';
+	perms[8] = mode & S_IWOTH ? 'w' : '-';
+	perms[9] = mode & S_IXOTH ? 'x' : '-';
+	perms[10] = '\0';
+	size_t nlink = f->status.st_nlink;
+	size_t fsize = f->status.st_size;
+	char *tim = ctime(&(f->status.st_mtime));
+	tim = ft_strchr(tim, ' ') + 1;
+	char *timfin = ft_strrchr(tim, ':');
+	*timfin = '\0';
+	char *nam = f->name;
+	ft_printf("%s %*lu %-*s %-*s %*lu %s %-s", perms, cols.lnk - 1, nlink, cols.owner - 1, f->owner, cols.group - 1, f->group, cols.size - 1, fsize, tim, nam);
+	if (S_ISLNK(mode))
+		ft_printf(" -> %s\n", "linked file");
+	else
+		ft_printf("\n");
+}
+
 void	list_path(const char *path, int depth, int options)
 {
-	struct stat		info;
-	DIR				*dir;
-	struct dirent	*entry;
-	struct s_finfo	*about[MAX_WIDTH];
-	int				count;
-	int				i;
-	int				(*sorting)(const void *left, const void *right);
-	size_t			tot_blocks;
-	size_t			max_lnk;
-	size_t			max_size;
-	size_t			max_name;
-	size_t			max_owner;
-	size_t			max_group;
-	char			perms[11];
+	struct stat			tmpstat;
+	DIR					*dir;
+	struct dirent		*entry;
+	struct s_finfo		*infos[MAX_WIDTH];
+	int					count;
+	int					i;
+	int					(*sorting)(const void *left, const void *right);
+	int					retcode;
+	size_t				tot_blocks;
+	struct s_col_widths	cols;
 
 	if (depth > MAX_DEPTH)
 	{
 		ft_printf("%s: reached recursion limit. exiting.\n", path);
 		exit(Fail_minor);
 	}
-	if (-1 == stat(path, &info))
+	if (options & LS_VERBOSE)
+		retcode = lstat(path, &tmpstat);
+	else
+		retcode = stat(path, &tmpstat);
+	if (-1 == retcode)
 	{
 		ft_printf("ft_ls: cannot access '%s': %s\n", path, strerror(errno));
 		if (depth > STARTING_DEPTH)
@@ -235,16 +251,16 @@ void	list_path(const char *path, int depth, int options)
 		else
 			exit(Fail_serious);
 	}
-	if (info.st_mode & S_IFDIR)
+	if (tmpstat.st_mode & S_IFDIR)
 	{
 		dir = opendir(path);
 		count = 0;
 		tot_blocks = 0;
-		max_lnk = 0;
-		max_size = 0;
-		max_name = 0;
-		max_owner = 0;
-		max_group = 0;
+		cols.lnk = 0;
+		cols.size = 0;
+		cols.name = 0;
+		cols.owner = 0;
+		cols.group = 0;
 		while ((entry = readdir(dir)))
 		{
 			if (entry->d_name[0] == '.' && !(options & LS_LIST_ALL))
@@ -254,34 +270,33 @@ void	list_path(const char *path, int depth, int options)
 				ft_printf("%s: reached max number of entries. exiting.\n", path);
 				exit(Fail_serious);
 			}
-			about[count] = malloc(sizeof(struct s_finfo));
-			my_assert(!!about[count], "ft_ls: malloc failed", Fail_serious);
-			about[count]->name = ft_strdup(entry->d_name);
-			my_assert(!!about[count]->name, "ft_ls: malloc failed", Fail_serious);
-			about[count]->fullpath = patcat(path, entry->d_name);
-			int				res;
-			struct passwd	*passwd_data;
-			struct group	*group_data;
-			res = stat(about[count]->fullpath, &(about[count]->info));
-			if (-1 == res)
+			infos[count] = malloc(sizeof(struct s_finfo));
+			my_assert(!!infos[count], "ft_ls: malloc failed", Fail_serious);
+			infos[count]->name = ft_strdup(entry->d_name);
+			my_assert(!!infos[count]->name, "ft_ls: malloc failed", Fail_serious);
+			infos[count]->fullpath = patcat(path, entry->d_name);
+			retcode = lstat(infos[count]->fullpath, &(infos[count]->status));
+			if (-1 == retcode)
 			{
 				ft_printf("ft_ls: cannot access '%s': %s\n", entry->d_name, strerror(errno));
 				exit(Fail_serious);
 			}
-			passwd_data = getpwuid(about[count]->info.st_uid);
+			struct passwd	*passwd_data;
+			struct group	*group_data;
+			passwd_data = getpwuid(infos[count]->status.st_uid);
 			my_assert(!!passwd_data, "ft_ls: unable to get owner's name", Fail_serious);
-			group_data = getgrgid(about[count]->info.st_gid);
+			infos[count]->owner = ft_strdup(passwd_data->pw_name);
+			my_assert(!!infos[count]->owner, "ft_ls: malloc failed", Fail_serious);
+			group_data = getgrgid(infos[count]->status.st_gid);
 			my_assert(!!group_data, "ft_ls: unable to get groupname", Fail_serious);
-			about[count]->owner = ft_strdup(passwd_data->pw_name);
-			my_assert(!!about[count]->owner, "ft_ls: malloc failed", Fail_serious);
-			about[count]->group = ft_strdup(group_data->gr_name);
-			my_assert(!!about[count]->group, "ft_ls: malloc failed", Fail_serious);
-			tot_blocks += about[count]->info.st_blocks;
-			max_lnk = ft_max(max_lnk, n_digits(about[count]->info.st_nlink));
-			max_size = ft_max(max_size, n_digits(about[count]->info.st_size));
-			max_name = ft_max(max_name, ft_strlen(about[count]->name));
-			max_owner = ft_max(max_owner, ft_strlen(about[count]->owner));
-			max_group = ft_max(max_group, ft_strlen(about[count]->group));
+			infos[count]->group = ft_strdup(group_data->gr_name);
+			my_assert(!!infos[count]->group, "ft_ls: malloc failed", Fail_serious);
+			tot_blocks += infos[count]->status.st_blocks;
+			cols.lnk = ft_max(cols.lnk, n_digits(infos[count]->status.st_nlink));
+			cols.size = ft_max(cols.size, n_digits(infos[count]->status.st_size));
+			cols.name = ft_max(cols.name, ft_strlen(infos[count]->name));
+			cols.owner = ft_max(cols.owner, ft_strlen(infos[count]->owner));
+			cols.group = ft_max(cols.group, ft_strlen(infos[count]->group));
 			count++;
 		}
 		closedir(dir);
@@ -295,7 +310,7 @@ void	list_path(const char *path, int depth, int options)
 		{
 			sorting = sorting == alpha ? rev_alpha : rev_mtime;
 		}
-		qsort(about, count, sizeof(struct s_finfo *), sorting);
+		qsort(infos, count, sizeof(struct s_finfo *), sorting);
 		/*
 		 * end sort()
 		 */
@@ -305,62 +320,33 @@ void	list_path(const char *path, int depth, int options)
 		}
 		struct winsize	winsize;
 		int				ncol;
-		if (options & LS_LONG_INFO)
+		if (options & LS_VERBOSE)
 		{
 			ft_printf("total %lu\n", tot_blocks / BLOCK_HACK);
 		}
 		else
 		{
 			/*
-			 * TODO(qsharoly): match output column widths of ls
+			 * TODO(qsharoly): ls-like column widths
 			 */
-			int	res;
-
-			res = ioctl(0, TIOCGWINSZ, &winsize);
-			my_assert(res != -1, "ft_ls: failed to get terminal dimensions", Fail_serious);
-			ncol = max_name > 0 ? winsize.ws_col / max_name : 1;
+			retcode = ioctl(0, TIOCGWINSZ, &winsize);
+			my_assert(retcode != -1, "ft_ls: failed to get terminal dimensions", Fail_serious);
+			ncol = cols.name > 0 ? winsize.ws_col / cols.name : 1;
 		}
 		i = 0;
 		while (i < count)
 		{
-			if (options & LS_LONG_INFO)
+			if (options & LS_VERBOSE)
 			{
-				mode_t	mode = about[i]->info.st_mode;
-				perms[0] = mode & S_IFDIR ? 'd' : '-';
-				perms[1] = mode & S_IRUSR ? 'r' : '-';
-				perms[2] = mode & S_IWUSR ? 'w' : '-';
-				perms[3] = mode & S_IXUSR ? 'x' : '-';
-				perms[4] = mode & S_IRGRP ? 'r' : '-';
-				perms[5] = mode & S_IWGRP ? 'w' : '-';
-				perms[6] = mode & S_IXGRP ? 'x' : '-';
-				perms[7] = mode & S_IROTH ? 'r' : '-';
-				perms[8] = mode & S_IWOTH ? 'w' : '-';
-				perms[9] = mode & S_IXOTH ? 'x' : '-';
-				perms[10] = '\0';
-				size_t nlink = about[i]->info.st_nlink;
-				size_t fsize = about[i]->info.st_size;
-				char *tim = ctime(&(about[i]->info.st_mtime));
-				tim = ft_strchr(tim, ' ') + 1;
-				char *timfin = ft_strrchr(tim, ':');
-				*timfin = '\0';
-				char *nam = about[i]->name;
-				ft_printf("%s %*lu %-*s %-*s %*lu %s %-s\n", perms, max_lnk - 1, nlink, max_owner - 1, about[i]->owner, max_group - 1, about[i]->group, max_size - 1, fsize, tim, nam);
+				print_verbose_info(infos[i], cols);
 			}
 			else
 			{
-				if (options & LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS)
-				{
-
-					ft_printf("%-*s", max_name, about[i]->name);
-				}
-				else
-				{
-					int	tabindex;
-
-					tabindex = i / ncol + (count / ncol + 1) * (i % ncol);
-					if (tabindex < count)
-						ft_printf("%-*s", max_name, about[tabindex]->name);
-				}
+				/*
+				 * TODO: list by columns
+				 */
+				//if (options & LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS)
+				ft_printf("%-*s", cols.name, infos[i]->name);
 				if (0 == (i + 1) % ncol || i == count - 1)
 					ft_printf("\n");
 			}
@@ -369,22 +355,49 @@ void	list_path(const char *path, int depth, int options)
 		i = 0;
 		while (i < count)
 		{
-			if ((options & LS_RECURSE) && (about[i]->info.st_mode & S_IFDIR)
-				&& !(ft_strequ(about[i]->name, ".") || ft_strequ(about[i]->name, "..")))
+			if ((options & LS_RECURSE) && (S_ISDIR(infos[i]->status.st_mode))
+				&& !ft_strequ(infos[i]->name, ".") && !ft_strequ(infos[i]->name, ".."))
 			{
 				ft_printf("\n");
-				list_path(about[i]->fullpath, depth + 1, options);
+				list_path(infos[i]->fullpath, depth + 1, options);
 			}
-			free(about[i]->name);
-			free(about[i]->fullpath);
-			free(about[i]->owner);
-			free(about[i]->group);
-			free(about[i]);
+			free(infos[i]->name);
+			free(infos[i]->fullpath);
+			free(infos[i]->owner);
+			free(infos[i]->group);
+			free(infos[i]);
 			i++;
 		}
 	}
 	else
-		ft_printf("%s\n", path);
+	{
+		if (options & LS_VERBOSE)
+		{
+			struct s_finfo	info;
+
+			info.name = (char *)path;
+			info.fullpath = (char *)path;
+			info.status = tmpstat;
+			struct passwd	*passwd_data;
+			struct group	*group_data;
+			passwd_data = getpwuid(info.status.st_uid);
+			my_assert(!!passwd_data, "ft_ls: unable to get owner's name", Fail_serious);
+			info.owner = ft_strdup(passwd_data->pw_name);
+			my_assert(!!info.owner, "ft_ls: malloc failed", Fail_serious);
+			group_data = getgrgid(info.status.st_gid);
+			my_assert(!!group_data, "ft_ls: unable to get groupname", Fail_serious);
+			info.group = ft_strdup(group_data->gr_name);
+			my_assert(!!info.group, "ft_ls: malloc failed", Fail_serious);
+			cols.lnk = n_digits(info.status.st_nlink);
+			cols.size = n_digits(info.status.st_size);
+			cols.name = ft_strlen(info.name);
+			cols.owner = ft_strlen(info.owner);
+			cols.group = ft_strlen(info.group);
+			print_verbose_info(&info, cols);
+		}
+		else
+			ft_printf("%s\n", path);
+	}
 }
 
 int		main(int argc, const char **argv)

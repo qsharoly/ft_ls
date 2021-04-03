@@ -6,6 +6,7 @@ CCFLAGS=-Wall -Wextra -Werror
 INCFLAGS=-Iincludes -I$(LFT)/includes -I$(LPF)/includes
 LIBFLAGS=-L$(LFT) -lft -L$(LPF) -lftprintf
 SRC=src/main.c
+DEBUG=1
 
 ifdef DEBUG
 	CCFLAGS += -g
@@ -17,7 +18,7 @@ all: $(NAME) $(LFT) $(LPF)
 
 export DEBUG
 export CC
-$(NAME): $(SRC)
+$(NAME): $(SRC) includes/ft_ls.h
 	make -C $(LPF)
 	$(CC) $(SRC) -o $(NAME) $(CCFLAGS) $(INCFLAGS) $(LIBFLAGS)
 

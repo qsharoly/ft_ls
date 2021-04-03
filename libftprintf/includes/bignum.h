@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 04:19:11 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/10 08:44:56 by debby            ###   ########.fr       */
+/*   Updated: 2021/03/20 14:04:48 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@
 /*
 ** `t_digit` must be enough to hold (BIG_BASE)
 ** `t_digit_tmp` must be enough to hold (BIG_BASE * BIG_BASE)
-**
 */
 
 # define BIG_N_DIGITS 90

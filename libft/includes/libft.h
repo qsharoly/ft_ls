@@ -6,14 +6,14 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/04 16:08:51 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/10 21:45:18 by debby            ###   ########.fr       */
+/*   Updated: 2021/03/20 13:04:18 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef LIBFT_H
 # define LIBFT_H
 
-# include <stdlib.h>
+# include <stddef.h>
 
 # define ITOA_BUF_SIZE 65
 

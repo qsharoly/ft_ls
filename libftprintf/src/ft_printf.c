@@ -6,11 +6,12 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/27 18:24:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/10 07:44:47 by debby            ###   ########.fr       */
+/*   Updated: 2021/03/20 12:52:09 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <unistd.h>
+#include <stdlib.h>//exit
 #include "libft.h"
 #include "libftprintf.h"
 
