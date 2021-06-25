@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2021/04/03 04:03:15 by debby            ###   ########.fr       */
+/*   Updated: 2021/04/26 22:00:46 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@
 #define LS_LIST_ALL (1<<1)
 #define LS_VERBOSE (1<<2)
 #define LS_SORT_REVERSE (1<<3)
-#define LS_RECURSE (1<<4)
+#define LS_RECURSIVE (1<<4)
 #define LS_SORT_BY_TIME (1<<5)
 #define LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS (1<<6)
 
@@ -39,8 +39,8 @@ enum e_exitcode
 struct		s_finfo
 {
 	struct stat		status;
-	char			*fullpath;
 	char			*name;
+	char			*fullname;
 	char			*owner;
 	char			*group;
 };
