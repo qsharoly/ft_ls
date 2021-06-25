@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/25 10:39:48 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/25 11:10:22 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,12 +52,12 @@ static void	print_help()
 	);
 }
 
-static void	parse_option(const char *str, unsigned *options)
+static void	parse_option(const char *str, unsigned *options, const char *av0)
 {
 	int		j;
 	char	c;
 
-	if (ft_strequ(str, "--help"))
+	if (ft_strequ(str - 1, "--help"))
 	{
 		print_help();
 		exit(Success);
@@ -79,8 +79,8 @@ static void	parse_option(const char *str, unsigned *options)
 			*options |= LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS;
 		else
 		{
-			ft_printf("ft_ls: invalid option -- '%c'\n", c);
-			ft_printf("Try 'ft_ls --help' for more information.\n");
+			ft_printf("%s: invalid option -- '%c'\n", av0, c);
+			ft_printf("Try '%s --help' for more information.\n", av0);
 			exit(Fail_serious);
 		}
 		j++;
@@ -97,7 +97,7 @@ static unsigned parse_options(int argc, const char **argv)
 	while (i < argc)
 	{
 		if (argv[i][0] == '-')
-			parse_option(&argv[i][1], &options);
+			parse_option(&argv[i][1], &options, argv[0]);
 		i++;
 	}
 	return (options);
