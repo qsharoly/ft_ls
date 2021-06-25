@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/25 09:29:41 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/25 10:39:48 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@
 #include <time.h> //ctime()
 #include <pwd.h> //getpwuid()
 #include <grp.h> //getgrgid()
+#include <unistd.h> //readlink()
 
 static void	list_dir(const char *path, int depth, unsigned options);
 
@@ -214,13 +215,27 @@ static void	print_verbose_info(struct s_finfo	*f, struct s_col_widths cols)
 	perms[10] = '\0';
 	size_t nlink = f->status.st_nlink;
 	size_t fsize = f->status.st_size;
-	char *time = ctime(&(f->status.st_mtime));
-	time = ft_strchr(time, ' ') + 1;
+	char *mtime = ctime(&(f->status.st_mtime));
+	char *mmm_dd = ft_strchr(mtime, ' ') + 1;
+	char *hh_mm = &mtime[11];
+	char *_yyyy = &mtime[19];
+	char *hm_or_yy;
+	time_t now = time(NULL);
+#define SIX_MONTHS_IN_SEC 15778476
+	if (now > f->status.st_mtime && now - f->status.st_mtime > SIX_MONTHS_IN_SEC)
+		hm_or_yy = _yyyy;
+	else
+		hm_or_yy = hh_mm;
 	char *name = f->name;
-	ft_printf("%s %*lu %-*s %-*s %*lu %.12s %-s", perms, cols.lnk - 1, nlink, cols.owner - 1, f->owner, cols.group - 1, f->group, cols.size - 1, fsize, time, name);
+	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %-s", perms, cols.lnk - 1, nlink, cols.owner - 1, f->owner, cols.group - 1, f->group, cols.size - 1, fsize, mmm_dd, hm_or_yy, name);
 	//TODO: read link
 	if (S_ISLNK(mode))
-		ft_printf(" -> %s\n", "linked file");
+	{
+#define LINKBUF 80
+		char linkbuf[LINKBUF];
+		size_t linklen = readlink(f->fullname, linkbuf, LINKBUF);
+		ft_printf(" -> %.*s\n", linklen, linkbuf);
+	}
 	else
 		ft_printf("\n");
 }
