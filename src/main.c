@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/27 18:44:44 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 19:24:40 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@
 #include <grp.h> //getgrgid()
 #include <unistd.h> //readlink()
 
-static void	list_dir(const char *path, int depth, unsigned options);
+static int	list_dir(const char *path, int depth, unsigned options);
 
 static void	print_help()
 {
@@ -81,8 +81,8 @@ static void	parse_option(const char *str, unsigned *options, const char *av0)
 			*options |= LS_SINGLE_COLUMN;
 		else
 		{
-			ft_printf("%s: invalid option -- '%c'\n", av0, c);
-			ft_printf("Try '%s --help' for more information.\n", av0);
+			ft_dprintf(STDERR, "%s: invalid option -- '%c'\n", av0, c);
+			ft_dprintf(STDERR, "Try '%s --help' for more information.\n", av0);
 			exit(Fail_serious);
 		}
 		j++;
@@ -267,7 +267,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths cols)
 		ft_printf("\n");
 }
 
-void	list_paths(const char **paths, int path_count, int depth, int options)
+int	list_paths(const char **paths, int path_count, int depth, int options)
 {
 	struct s_finfo		*infos[MAX_WIDTH];
 	const char			*basename;
@@ -276,6 +276,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	size_t				tot_blocks;
 	struct s_col_widths	cols;
 	int					info_count;
+	int					ret;
 
 	tot_blocks = 0;
 	cols.lnk = 0;
@@ -303,7 +304,14 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		new_info = (struct s_finfo *)ft_calloc(1, sizeof(struct s_finfo));
 		gate(!!new_info, "ft_ls: allocation failed", "", Fail_serious);
 		tmp_res = lstat(paths[i], &new_info->status);
-		gate(tmp_res != -1, "ft_ls: cannot access '%s': ", paths[i], Fail_serious);
+		if (tmp_res == -1)
+		{
+			ft_dprintf(STDERR, "ft_ls: cannot access '%s': %s\n", paths[i], strerror(errno));
+			free(new_info);
+			i++;
+			ret = Fail_minor;
+			continue;
+		}
 		new_info->fullname = paths[i];
 		new_info->name = basename;
 		if (options & LS_DETAILED)
@@ -428,7 +436,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 				}
 				else
 					ft_printf("\n%s:\n", infos[i]->name);
-				list_dir(infos[i]->fullname, depth, options);
+				ret = list_dir(infos[i]->fullname, depth, options);
 			}
 			i++;
 		}
@@ -441,14 +449,16 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		free(infos[i]);
 		i++;
 	}
+	return (ret);
 }
 
-static void	list_dir(const char *path, int depth, unsigned options)
+static int	list_dir(const char *path, int depth, unsigned options)
 {
 	DIR				*dir;
 	struct dirent	*entry;
 	char			*sub_paths[MAX_WIDTH];
 	int				sub_count;
+	int				ret;
 
 	gate(depth <= MAX_DEPTH, "ft_ls: can't list '%s': reached max directory depth.\n", path, Fail_minor);
 	dir = opendir(path);
@@ -461,13 +471,14 @@ static void	list_dir(const char *path, int depth, unsigned options)
 		sub_count++;
 	}
 	closedir(dir);
-	list_paths((const char **)sub_paths, sub_count, depth + 1, options);
+	ret = list_paths((const char **)sub_paths, sub_count, depth + 1, options);
 	int j = 0;
 	while (j < sub_count)
 	{
 		free(sub_paths[j]);
 		j++;
 	}
+	return (ret);
 }
 
 int		main(int argc, const char **argv)
@@ -476,6 +487,7 @@ int		main(int argc, const char **argv)
 	int			i;
 	const char	*paths[MAX_WIDTH];
 	int			path_count;
+	int			ret;
 
 	options = parse_options(argc, argv);
 	path_count = 0;
@@ -496,8 +508,8 @@ int		main(int argc, const char **argv)
 		}
 	}
 	if (path_count > 0)
-		list_paths(paths, path_count, STARTING_DEPTH, options);
+		ret = list_paths(paths, path_count, STARTING_DEPTH, options);
 	else
-		list_dir(".", STARTING_DEPTH, options);
-	return (0);
+		ret = list_dir(".", STARTING_DEPTH, options);
+	return (ret);
 }
