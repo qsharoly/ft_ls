@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/25 11:10:22 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 09:30:48 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,9 @@ static void	parse_option(const char *str, unsigned *options, const char *av0)
 		else if (c == 't')
 			*options |= LS_SORT_BY_TIME;
 		else if (c == 'x')
-			*options |= LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS;
+			*options |= LS_TRANSPOSE_COLUMNS;
+		else if (c == '1')
+			*options |= LS_SINGLE_COLUMN;
 		else
 		{
 			ft_printf("%s: invalid option -- '%c'\n", av0, c);
@@ -124,20 +126,36 @@ int		alpha(const void *l, const void *r)
 {
 	struct s_finfo	*left;
 	struct s_finfo	*right;
+	char			*lname;
+	char			*rname;
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	return (ft_strcmpi(left->name + (*(left->name) == '.'), right->name + (*(right->name) == '.')));
+	lname = left->name;
+	rname = right->name;
+	if (lname[0] == '.')
+		lname++;
+	if (rname[0] == '.')
+		rname++;
+	return (ft_stricmp(lname, rname));
 }
 
 int		rev_alpha(const void *l, const void *r)
 {
 	struct s_finfo	*left;
 	struct s_finfo	*right;
+	char			*lname;
+	char			*rname;
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	return (-ft_strcmpi(left->name + (*(left->name) == '.'), right->name + (*(right->name) == '.')));
+	lname = left->name;
+	rname = right->name;
+	if (lname[0] == '.')
+		lname++;
+	if (rname[0] == '.')
+		rname++;
+	return (-ft_stricmp(lname, rname));
 }
 
 int		mtime(const void *l, const void *r)
@@ -221,14 +239,13 @@ static void	print_verbose_info(struct s_finfo	*f, struct s_col_widths cols)
 	char *_yyyy = &mtime[19];
 	char *hm_or_yy;
 	time_t now = time(NULL);
-#define SIX_MONTHS_IN_SEC 15778476
-	if (now > f->status.st_mtime && now - f->status.st_mtime > SIX_MONTHS_IN_SEC)
+#define SIX_MONTHS_AS_SECONDS 15778476
+	if (now > f->status.st_mtime && now - f->status.st_mtime > SIX_MONTHS_AS_SECONDS)
 		hm_or_yy = _yyyy;
 	else
 		hm_or_yy = hh_mm;
 	char *name = f->name;
 	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %-s", perms, cols.lnk - 1, nlink, cols.owner - 1, f->owner, cols.group - 1, f->group, cols.size - 1, fsize, mmm_dd, hm_or_yy, name);
-	//TODO: read link
 	if (S_ISLNK(mode))
 	{
 #define LINKBUF 80
@@ -245,10 +262,10 @@ void	list_paths(char **paths, int path_count, int depth, int options)
 	struct s_finfo		*infos[MAX_WIDTH];
 	char				*name_ptr;
 	int					i;
-	int					(*compare)(const void *left, const void *right);
 	int					tmp_res;
 	size_t				tot_blocks;
 	struct s_col_widths	cols;
+	int					info_count;
 
 	tot_blocks = 0;
 	cols.lnk = 0;
@@ -256,78 +273,96 @@ void	list_paths(char **paths, int path_count, int depth, int options)
 	cols.name = 0;
 	cols.owner = 0;
 	cols.group = 0;
+	info_count = 0;
 	i = 0;
 	while (i < path_count)
 	{
-		infos[i] = (struct s_finfo *)malloc(sizeof(struct s_finfo));
-		gate(!!infos[i], "ft_ls: malloc failed", Fail_serious);
-		if (options & LS_VERBOSE)
-			tmp_res = lstat(paths[i], &infos[i]->status);
+		name_ptr = ft_strrchr(paths[i], '/');
+		//don't truncate paths for names from argv
+		if (!name_ptr || depth == STARTING_DEPTH)
+			name_ptr = paths[i];
 		else
-			tmp_res = stat(paths[i], &infos[i]->status);
+			name_ptr += 1;
+		//skip invisible files except for those from argv
+		if (name_ptr[0] == '.' && !(options & LS_LIST_ALL || depth == STARTING_DEPTH))
+		{
+			i++;
+			continue;
+		}
+		struct s_finfo	*new_info;
+		new_info = (struct s_finfo *)malloc(sizeof(struct s_finfo));
+		gate(!!new_info, "ft_ls: malloc failed", Fail_serious);
+		if (options & LS_VERBOSE)
+			tmp_res = lstat(paths[i], &new_info->status);
+		else
+			tmp_res = stat(paths[i], &new_info->status);
 		if (-1 == tmp_res)
 		{
 			ft_printf("ft_ls: cannot access '%s': %s\n", paths[i], strerror(errno));
 			exit(Fail_serious);
 		}
-		name_ptr = ft_strrchr(paths[i], '/');
-		if (!name_ptr)
-			name_ptr = paths[i];
-		else
-			name_ptr += 1;
-		infos[i]->name = ft_strdup(name_ptr);
-		gate(!!infos[i]->name, "ft_ls: malloc failed", Fail_serious);
-		infos[i]->fullname = ft_strdup(paths[i]);
-		gate(!!infos[i]->fullname, "ft_ls: malloc failed", Fail_serious);
+		new_info->name = ft_strdup(name_ptr);
+		gate(!!new_info->name, "ft_ls: malloc failed", Fail_serious);
+		new_info->fullname = ft_strdup(paths[i]);
+		gate(!!new_info->fullname, "ft_ls: malloc failed", Fail_serious);
 		struct passwd	*tmp_passwd;
 		struct group	*tmp_group;
-		tmp_passwd = getpwuid(infos[i]->status.st_uid);
+		tmp_passwd = getpwuid(new_info->status.st_uid);
 		gate(!!tmp_passwd, "ft_ls: unable to get owner's name", Fail_serious);
-		infos[i]->owner = ft_strdup(tmp_passwd->pw_name);
-		gate(!!infos[i]->owner, "ft_ls: malloc failed", Fail_serious);
-		tmp_group = getgrgid(infos[i]->status.st_gid);
+		new_info->owner = ft_strdup(tmp_passwd->pw_name);
+		gate(!!new_info->owner, "ft_ls: malloc failed", Fail_serious);
+		tmp_group = getgrgid(new_info->status.st_gid);
 		gate(!!tmp_group, "ft_ls: unable to get groupname", Fail_serious);
-		infos[i]->group = ft_strdup(tmp_group->gr_name);
-		gate(!!infos[i]->group, "ft_ls: malloc failed", Fail_serious);
-		tot_blocks += infos[i]->status.st_blocks;
-		cols.lnk = ft_max(cols.lnk, n_digits(infos[i]->status.st_nlink));
-		cols.size = ft_max(cols.size, n_digits(infos[i]->status.st_size));
-		cols.name = ft_max(cols.name, ft_strlen(infos[i]->name));
-		cols.owner = ft_max(cols.owner, ft_strlen(infos[i]->owner));
-		cols.group = ft_max(cols.group, ft_strlen(infos[i]->group));
+		new_info->group = ft_strdup(tmp_group->gr_name);
+		gate(!!new_info->group, "ft_ls: malloc failed", Fail_serious);
+		tot_blocks += new_info->status.st_blocks;
+		cols.lnk = ft_max(cols.lnk, n_digits(new_info->status.st_nlink));
+		cols.size = ft_max(cols.size, n_digits(new_info->status.st_size));
+		cols.name = ft_max(cols.name, ft_strlen(new_info->name));
+		cols.owner = ft_max(cols.owner, ft_strlen(new_info->owner));
+		cols.group = ft_max(cols.group, ft_strlen(new_info->group));
+		infos[info_count] = new_info;
+		info_count++;
 		i++;
 	}
-	int info_count = i;
-	compare = alpha;
+	enum e_sort_style {
+		Alpha,
+		Mod_time,
+		MAX_COMPARE
+	}	sort_style;
+	int	(*compare)(const void *left, const void *right);
+	int	(*cmp[MAX_COMPARE])(const void *left, const void *right) = {
+		alpha, mtime };
+	int	(*cmp_reverse[MAX_COMPARE])(const void *left, const void *right) = {
+		rev_alpha, rev_mtime };
+	sort_style = Alpha;
 	if (options & LS_SORT_BY_TIME)
-		compare = mtime;
+		sort_style = Mod_time;
 	if (options & LS_SORT_REVERSE)
-	{
-		compare = compare == alpha ? rev_alpha : rev_mtime;
-	}
-	qsort(infos, path_count, sizeof(struct s_finfo *), compare);
+		compare = cmp_reverse[sort_style];
+	else
+		compare = cmp[sort_style];
+	qsort(infos, info_count, sizeof(struct s_finfo *), compare);
 	struct winsize	winsize;
 	int				ncol;
-	if (options & LS_VERBOSE)
+	if (options & LS_VERBOSE && depth > STARTING_DEPTH)
 	{
 		ft_printf("total %lu\n", tot_blocks / BLOCK_HACK);
 	}
-	else
+	else if (!(options & LS_SINGLE_COLUMN))
 	{
 		// TODO(qsharoly): ls-like column widths
 		tmp_res = ioctl(0, TIOCGWINSZ, &winsize);
 		gate(tmp_res != -1, "ft_ls: failed to get terminal dimensions", Fail_serious);
-		ncol = cols.name > 0 ? winsize.ws_col / cols.name : 1;
+		if (cols.name > 0)
+			ncol = winsize.ws_col / cols.name;
+		if (ncol < 1)
+			ncol = 1;
 	}
+	//list files
 	i = 0;
 	while (i < info_count)
 	{
-		//skip invisible files
-		if (infos[i]->name[0] == '.' && !(options & LS_LIST_ALL))
-		{
-			i++;
-			continue;
-		}
 		//skip paths from argv which are dirs;
 		if (S_ISDIR(infos[i]->status.st_mode) && depth == STARTING_DEPTH)
 		{
@@ -337,29 +372,42 @@ void	list_paths(char **paths, int path_count, int depth, int options)
 		if (options & LS_VERBOSE)
 		{
 			print_verbose_info(infos[i], cols);
+			i++;
+			continue;
 		}
-		else
+		if (options & LS_SINGLE_COLUMN || ncol == 1)
 		{
-			//TODO: add transposed column output
-
-			ft_printf("%-*s", cols.name, infos[i]->name);
-			if (0 == (i + 1) % ncol || i == info_count - 1)
-				ft_printf("\n", i);
+			ft_printf("%s\n", infos[i]->name);
+			i++;
+			continue;
 		}
+		//TODO: add transposed column output
+
+		ft_printf("%-*s", cols.name, infos[i]->name);
+		if (0 == (i + 1) % ncol || i == info_count - 1)
+			ft_printf("\n");
 		i++;
 	}
-	//list directories
+	//step into directories
 	if (options & LS_RECURSIVE || depth == STARTING_DEPTH)
 	{
 		i = 0;
-		while (i < path_count)
+		while (i < info_count)
 		{
+			//go into "." only from argv
 			if (depth > STARTING_DEPTH && ft_strequ(infos[i]->name, "."))
 			{
 				i++;
 				continue;
 			}
-			if (ft_strequ(infos[i]->name, ".."))
+			//go into ".." only from argv
+			if (depth > STARTING_DEPTH && ft_strequ(infos[i]->name, ".."))
+			{
+				i++;
+				continue;
+			}
+			//don't go into links
+			if (S_ISLNK(infos[i]->status.st_mode))
 			{
 				i++;
 				continue;
@@ -370,7 +418,7 @@ void	list_paths(char **paths, int path_count, int depth, int options)
 		}
 	}
 	i = 0;
-	while (i < path_count)
+	while (i < info_count)
 	{
 		free(infos[i]->name);
 		free(infos[i]->fullname);

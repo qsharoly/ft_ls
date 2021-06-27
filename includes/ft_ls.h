@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2021/04/26 22:00:46 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/26 02:59:00 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,8 @@
 #define LS_SORT_REVERSE (1<<3)
 #define LS_RECURSIVE (1<<4)
 #define LS_SORT_BY_TIME (1<<5)
-#define LS_LIST_BY_LINES_INSTEAD_OF_COLUMNS (1<<6)
+#define LS_TRANSPOSE_COLUMNS (1<<6)
+#define LS_SINGLE_COLUMN (1<<7)
 
 enum e_exitcode
 {

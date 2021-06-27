@@ -6,8 +6,8 @@ CCFLAGS=-Wall -Wextra -Werror
 INCFLAGS=-Iincludes -I$(LFT)/includes -I$(LPF)/includes
 LIBFLAGS=-L$(LFT) -lft -L$(LPF) -lftprintf
 SRC=src/main.c
-DEBUG=1
 
+DEBUG=1
 ifdef DEBUG
 	CCFLAGS += -g
 endif
