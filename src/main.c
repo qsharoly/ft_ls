@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/27 19:24:40 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 20:44:14 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -256,8 +256,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths cols)
 	else
 		hm_or_yy = hh_mm;
 	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %-s", perms, cols.lnk - 1, nlink, cols.owner - 1, f->owner, cols.group - 1, f->group, cols.size - 1, fsize, mmm_dd, hm_or_yy, f->name);
-	if (S_ISLNK(mode))
-	{
+	if (S_ISLNK(mode)) {
 #define LINKBUF 80
 		char linkbuf[LINKBUF];
 		size_t linklen = readlink(f->fullname, linkbuf, LINKBUF);
@@ -303,7 +302,11 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 		struct s_finfo	*new_info;
 		new_info = (struct s_finfo *)ft_calloc(1, sizeof(struct s_finfo));
 		gate(!!new_info, "ft_ls: allocation failed", "", Fail_serious);
-		tmp_res = lstat(paths[i], &new_info->status);
+		//dont go into links in detailed mode
+		if (options & LS_DETAILED)
+			tmp_res = lstat(paths[i], &new_info->status);
+		else
+			tmp_res = stat(paths[i], &new_info->status);
 		if (tmp_res == -1)
 		{
 			ft_dprintf(STDERR, "ft_ls: cannot access '%s': %s\n", paths[i], strerror(errno));
@@ -431,11 +434,11 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 			{
 				if (depth == STARTING_DEPTH && had_printed == 0)
 				{
-					ft_printf("%s:\n", infos[i]->name);
+					ft_printf("%s:\n", infos[i]->fullname);
 					had_printed = 1;
 				}
 				else
-					ft_printf("\n%s:\n", infos[i]->name);
+					ft_printf("\n%s:\n", infos[i]->fullname);
 				ret = list_dir(infos[i]->fullname, depth, options);
 			}
 			i++;
@@ -510,6 +513,10 @@ int		main(int argc, const char **argv)
 	if (path_count > 0)
 		ret = list_paths(paths, path_count, STARTING_DEPTH, options);
 	else
+	{
+		if (options & LS_RECURSIVE)
+			ft_printf(".:\n");
 		ret = list_dir(".", STARTING_DEPTH, options);
+	}
 	return (ret);
 }
