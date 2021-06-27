@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/27 14:21:16 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 16:28:29 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,24 +159,33 @@ int		rev_alpha(const void *l, const void *r)
 	return (-ft_stricmp(lname, rname));
 }
 
+//by modification time, newest first, tibreak alphabetically
 int		mtime(const void *l, const void *r)
 {
 	struct s_finfo	*left;
 	struct s_finfo	*right;
+	int				diff;
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	return (right->status.st_mtime - left->status.st_mtime);
+	diff = right->status.st_mtime - left->status.st_mtime;
+	if (diff == 0)
+		return (alpha(l, r));
+	return (diff);
 }
 
 int		rev_mtime(const void *l, const void *r)
 {
 	struct s_finfo	*left;
 	struct s_finfo	*right;
+	int				diff;
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	return (-(right->status.st_mtime - left->status.st_mtime));
+	diff = left->status.st_mtime - right->status.st_mtime;
+	if (diff == 0)
+		return (rev_alpha(l, r));
+	return (diff);
 }
 
 size_t	n_digits(size_t val)
@@ -298,7 +307,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 			tmp_res = stat(paths[i], &new_info->status);
 		if (-1 == tmp_res)
 		{
-			ft_dprintf(STDERR_FD, "ft_ls: cannot access '%s': ", paths[i]);
+			ft_dprintf(STDERR, "ft_ls: cannot access '%s': ", paths[i]);
 			perror("");
 			exit(Fail_serious);
 		}
@@ -333,9 +342,9 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		MAX_COMPARE
 	}	sort_style;
 	int	(*compare)(const void *left, const void *right);
-	int	(*cmp[MAX_COMPARE])(const void *left, const void *right) = {
+	static int	(*cmp[MAX_COMPARE])(const void *left, const void *right) = {
 		alpha, mtime };
-	int	(*cmp_reverse[MAX_COMPARE])(const void *left, const void *right) = {
+	static int	(*cmp_reverse[MAX_COMPARE])(const void *left, const void *right) = {
 		rev_alpha, rev_mtime };
 	sort_style = Alpha;
 	if (options & LS_SORT_BY_TIME)
@@ -345,16 +354,21 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	else
 		compare = cmp[sort_style];
 	qsort(infos, info_count, sizeof(struct s_finfo *), compare);
-	struct winsize	winsize;
-	int				ncol;
 	if (options & LS_DETAILED && depth > STARTING_DEPTH)
 		ft_printf("total %lu\n", tot_blocks / BLOCK_HACK);
-	// TODO(qsharoly): ls-like column widths
-	tmp_res = ioctl(0, TIOCGWINSZ, &winsize);
-	gate(tmp_res != -1, "ft_ls: failed to get terminal dimensions", Fail_serious);
+	int		ncol;
 	ncol = 1;
-	if (cols.name > 0 && winsize.ws_col > cols.name)
-		ncol = winsize.ws_col / cols.name;
+	/*
+	struct winsize	winsize;
+	if (!(options & LS_SINGLE_COLUMN || options & LS_DETAILED))
+	{
+		// TODO(qsharoly): ls-like column widths
+		tmp_res = ioctl(0, TIOCGWINSZ, &winsize);
+		gate(tmp_res != -1, "ft_ls: failed to get terminal dimensions", Fail_serious);
+		if (cols.name > 0 && winsize.ws_col > cols.name)
+			ncol = winsize.ws_col / cols.name;
+	}
+	*/
 	//list files
 	i = 0;
 	while (i < info_count)
@@ -377,12 +391,14 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 			i++;
 			continue;
 		}
+		/*
 		//TODO: add transposed column output
 
 		ft_printf("%-*s", cols.name, infos[i]->name);
 		if (0 == (i + 1) % ncol || i == info_count - 1)
 			ft_printf("\n");
 		i++;
+		*/
 	}
 	//step into directories
 	if (options & LS_RECURSIVE || depth == STARTING_DEPTH)
@@ -432,13 +448,13 @@ static void	list_dir(const char *path, int depth, unsigned options)
 
 	if (depth > MAX_DEPTH)
 	{
-		ft_dprintf(STDERR_FD, "ft_ls: can't list '%s': reached max directory depth.\n", path);
+		ft_dprintf(STDERR, "ft_ls: can't list '%s': reached max directory depth.\n", path);
 		exit(Fail_minor);
 	}
 	dir = opendir(path);
 	if (!dir)
 	{
-		ft_dprintf(STDERR_FD, "ft_ls: cannot open directory '%s': ", path);
+		ft_dprintf(STDERR, "ft_ls: cannot open directory '%s': ", path);
 		perror("");
 		exit(Fail_serious);
 	}
@@ -447,7 +463,7 @@ static void	list_dir(const char *path, int depth, unsigned options)
 	{
 		if (sub_count > MAX_WIDTH)
 		{
-			ft_dprintf(STDERR_FD, "ft_ls: can't list '%s': reached max number of entries.\n", path);
+			ft_dprintf(STDERR, "ft_ls: can't list '%s': reached max number of entries.\n", path);
 			exit(Fail_serious);
 		}
 		sub_paths[sub_count] = patcat(path, entry->d_name);

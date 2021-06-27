@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/27 18:24:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/20 12:52:09 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 16:11:31 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,7 @@ int				ft_printf(const char *format, ...)
 	t_stream	b;
 	char		buffer[BUFFER_SIZE];
 
-	b = pf_stream_init(STDOUT_FD, buffer, BUFFER_SIZE, putc_impl_printf);
+	b = pf_stream_init(STDOUT, buffer, BUFFER_SIZE, putc_impl_printf);
 	init_conv_table();
 	va_start(ap, format);
 	print_args(&b, format, ap);

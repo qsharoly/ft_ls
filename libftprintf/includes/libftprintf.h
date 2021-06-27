@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/01/14 15:31:58 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/06/27 11:40:16 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 16:12:23 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,8 @@
 
 # include <stdarg.h>
 
-# define STDOUT_FD 1
-# define STDERR_FD 2
+# define STDOUT STDOUT_FILENO
+# define STDERR STDERR_FILENO
 # define BUFFER_SIZE 4096
 
 /*
