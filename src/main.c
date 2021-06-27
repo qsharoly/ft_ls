@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/27 20:44:14 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 22:33:51 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -255,7 +255,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths cols)
 		hm_or_yy = _yyyy;
 	else
 		hm_or_yy = hh_mm;
-	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %-s", perms, cols.lnk - 1, nlink, cols.owner - 1, f->owner, cols.group - 1, f->group, cols.size - 1, fsize, mmm_dd, hm_or_yy, f->name);
+	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %-s", perms, cols.lnk - 1, nlink, cols.owner, f->owner, cols.group, f->group, cols.size - 1, fsize, mmm_dd, hm_or_yy, f->name);
 	if (S_ISLNK(mode)) {
 #define LINKBUF 80
 		char linkbuf[LINKBUF];
@@ -434,7 +434,8 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 			{
 				if (depth == STARTING_DEPTH && had_printed == 0)
 				{
-					ft_printf("%s:\n", infos[i]->fullname);
+					if (!(options & LS_DETAILED && path_count == 1))
+						ft_printf("%s:\n", infos[i]->fullname);
 					had_printed = 1;
 				}
 				else
