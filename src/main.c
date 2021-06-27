@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/27 09:30:48 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 14:21:16 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,7 +68,7 @@ static void	parse_option(const char *str, unsigned *options, const char *av0)
 		if (c == 'a')
 			*options |= LS_LIST_ALL;
 		else if (c == 'l')
-			*options |= LS_VERBOSE;
+			*options |= LS_DETAILED;
 		else if (c == 'r')
 			*options |= LS_SORT_REVERSE;
 		else if (c == 'R')
@@ -117,7 +117,8 @@ char	*patcat(const char *path, const char *name)
 		exit(Fail_serious);
 	}
 	ft_strcpy(str, path);
-	ft_strcat(str, "/");
+	if (!ft_strequ(path, "/"))
+		ft_strcat(str, "/");
 	ft_strcat(str, name);
 	return (str);
 }
@@ -126,8 +127,8 @@ int		alpha(const void *l, const void *r)
 {
 	struct s_finfo	*left;
 	struct s_finfo	*right;
-	char			*lname;
-	char			*rname;
+	const char		*lname;
+	const char		*rname;
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
@@ -144,8 +145,8 @@ int		rev_alpha(const void *l, const void *r)
 {
 	struct s_finfo	*left;
 	struct s_finfo	*right;
-	char			*lname;
-	char			*rname;
+	const char		*lname;
+	const char		*rname;
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
@@ -200,7 +201,7 @@ void	gate(int condition, const char *message, enum e_exitcode code)
 	}
 }
 
-static void	print_verbose_info(struct s_finfo	*f, struct s_col_widths cols)
+static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths cols)
 {
 	mode_t	mode;
 	char	perms[11];
@@ -244,8 +245,7 @@ static void	print_verbose_info(struct s_finfo	*f, struct s_col_widths cols)
 		hm_or_yy = _yyyy;
 	else
 		hm_or_yy = hh_mm;
-	char *name = f->name;
-	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %-s", perms, cols.lnk - 1, nlink, cols.owner - 1, f->owner, cols.group - 1, f->group, cols.size - 1, fsize, mmm_dd, hm_or_yy, name);
+	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %-s", perms, cols.lnk - 1, nlink, cols.owner - 1, f->owner, cols.group - 1, f->group, cols.size - 1, fsize, mmm_dd, hm_or_yy, f->name);
 	if (S_ISLNK(mode))
 	{
 #define LINKBUF 80
@@ -257,10 +257,10 @@ static void	print_verbose_info(struct s_finfo	*f, struct s_col_widths cols)
 		ft_printf("\n");
 }
 
-void	list_paths(char **paths, int path_count, int depth, int options)
+void	list_paths(const char **paths, int path_count, int depth, int options)
 {
 	struct s_finfo		*infos[MAX_WIDTH];
-	char				*name_ptr;
+	const char			*basename;
 	int					i;
 	int					tmp_res;
 	size_t				tot_blocks;
@@ -277,50 +277,52 @@ void	list_paths(char **paths, int path_count, int depth, int options)
 	i = 0;
 	while (i < path_count)
 	{
-		name_ptr = ft_strrchr(paths[i], '/');
-		//don't truncate paths for names from argv
-		if (!name_ptr || depth == STARTING_DEPTH)
-			name_ptr = paths[i];
+		basename = ft_strrchr(paths[i], '/');
+		//don't truncate paths from argv
+		if (!basename || depth == STARTING_DEPTH)
+			basename = paths[i];
 		else
-			name_ptr += 1;
+			basename += 1;
 		//skip invisible files except for those from argv
-		if (name_ptr[0] == '.' && !(options & LS_LIST_ALL || depth == STARTING_DEPTH))
+		if (basename[0] == '.' && !(options & LS_LIST_ALL || depth == STARTING_DEPTH))
 		{
 			i++;
 			continue;
 		}
 		struct s_finfo	*new_info;
-		new_info = (struct s_finfo *)malloc(sizeof(struct s_finfo));
-		gate(!!new_info, "ft_ls: malloc failed", Fail_serious);
-		if (options & LS_VERBOSE)
+		new_info = (struct s_finfo *)ft_calloc(1, sizeof(struct s_finfo));
+		gate(!!new_info, "ft_ls: allocation failed", Fail_serious);
+		if (options & LS_DETAILED)
 			tmp_res = lstat(paths[i], &new_info->status);
 		else
 			tmp_res = stat(paths[i], &new_info->status);
 		if (-1 == tmp_res)
 		{
-			ft_printf("ft_ls: cannot access '%s': %s\n", paths[i], strerror(errno));
+			ft_dprintf(STDERR_FD, "ft_ls: cannot access '%s': ", paths[i]);
+			perror("");
 			exit(Fail_serious);
 		}
-		new_info->name = ft_strdup(name_ptr);
-		gate(!!new_info->name, "ft_ls: malloc failed", Fail_serious);
-		new_info->fullname = ft_strdup(paths[i]);
-		gate(!!new_info->fullname, "ft_ls: malloc failed", Fail_serious);
-		struct passwd	*tmp_passwd;
-		struct group	*tmp_group;
-		tmp_passwd = getpwuid(new_info->status.st_uid);
-		gate(!!tmp_passwd, "ft_ls: unable to get owner's name", Fail_serious);
-		new_info->owner = ft_strdup(tmp_passwd->pw_name);
-		gate(!!new_info->owner, "ft_ls: malloc failed", Fail_serious);
-		tmp_group = getgrgid(new_info->status.st_gid);
-		gate(!!tmp_group, "ft_ls: unable to get groupname", Fail_serious);
-		new_info->group = ft_strdup(tmp_group->gr_name);
-		gate(!!new_info->group, "ft_ls: malloc failed", Fail_serious);
-		tot_blocks += new_info->status.st_blocks;
-		cols.lnk = ft_max(cols.lnk, n_digits(new_info->status.st_nlink));
-		cols.size = ft_max(cols.size, n_digits(new_info->status.st_size));
+		new_info->fullname = paths[i];
+		new_info->name = basename;
+		if (options & LS_DETAILED)
+		{
+			struct passwd	*tmp_passwd;
+			struct group	*tmp_group;
+			tmp_passwd = getpwuid(new_info->status.st_uid);
+			gate(!!tmp_passwd, "ft_ls: unable to get owner's name", Fail_serious);
+			new_info->owner = ft_strdup(tmp_passwd->pw_name);
+			gate(!!new_info->owner, "ft_ls: allocation failed", Fail_serious);
+			tmp_group = getgrgid(new_info->status.st_gid);
+			gate(!!tmp_group, "ft_ls: unable to get groupname", Fail_serious);
+			new_info->group = ft_strdup(tmp_group->gr_name);
+			gate(!!new_info->group, "ft_ls: allocation failed", Fail_serious);
+			cols.lnk = ft_max(cols.lnk, n_digits(new_info->status.st_nlink));
+			cols.size = ft_max(cols.size, n_digits(new_info->status.st_size));
+			cols.owner = ft_max(cols.owner, ft_strlen(new_info->owner));
+			cols.group = ft_max(cols.group, ft_strlen(new_info->group));
+		}
 		cols.name = ft_max(cols.name, ft_strlen(new_info->name));
-		cols.owner = ft_max(cols.owner, ft_strlen(new_info->owner));
-		cols.group = ft_max(cols.group, ft_strlen(new_info->group));
+		tot_blocks += new_info->status.st_blocks;
 		infos[info_count] = new_info;
 		info_count++;
 		i++;
@@ -345,20 +347,14 @@ void	list_paths(char **paths, int path_count, int depth, int options)
 	qsort(infos, info_count, sizeof(struct s_finfo *), compare);
 	struct winsize	winsize;
 	int				ncol;
-	if (options & LS_VERBOSE && depth > STARTING_DEPTH)
-	{
+	if (options & LS_DETAILED && depth > STARTING_DEPTH)
 		ft_printf("total %lu\n", tot_blocks / BLOCK_HACK);
-	}
-	else if (!(options & LS_SINGLE_COLUMN))
-	{
-		// TODO(qsharoly): ls-like column widths
-		tmp_res = ioctl(0, TIOCGWINSZ, &winsize);
-		gate(tmp_res != -1, "ft_ls: failed to get terminal dimensions", Fail_serious);
-		if (cols.name > 0)
-			ncol = winsize.ws_col / cols.name;
-		if (ncol < 1)
-			ncol = 1;
-	}
+	// TODO(qsharoly): ls-like column widths
+	tmp_res = ioctl(0, TIOCGWINSZ, &winsize);
+	gate(tmp_res != -1, "ft_ls: failed to get terminal dimensions", Fail_serious);
+	ncol = 1;
+	if (cols.name > 0 && winsize.ws_col > cols.name)
+		ncol = winsize.ws_col / cols.name;
 	//list files
 	i = 0;
 	while (i < info_count)
@@ -369,9 +365,9 @@ void	list_paths(char **paths, int path_count, int depth, int options)
 			i++;
 			continue;
 		}
-		if (options & LS_VERBOSE)
+		if (options & LS_DETAILED)
 		{
-			print_verbose_info(infos[i], cols);
+			print_detailed_info(infos[i], cols);
 			i++;
 			continue;
 		}
@@ -420,8 +416,6 @@ void	list_paths(char **paths, int path_count, int depth, int options)
 	i = 0;
 	while (i < info_count)
 	{
-		free(infos[i]->name);
-		free(infos[i]->fullname);
 		free(infos[i]->owner);
 		free(infos[i]->group);
 		free(infos[i]);
@@ -438,16 +432,22 @@ static void	list_dir(const char *path, int depth, unsigned options)
 
 	if (depth > MAX_DEPTH)
 	{
-		ft_printf("can't list '%s': reached max directory depth.\n", path);
+		ft_dprintf(STDERR_FD, "ft_ls: can't list '%s': reached max directory depth.\n", path);
 		exit(Fail_minor);
 	}
 	dir = opendir(path);
+	if (!dir)
+	{
+		ft_dprintf(STDERR_FD, "ft_ls: cannot open directory '%s': ", path);
+		perror("");
+		exit(Fail_serious);
+	}
 	sub_count = 0;
 	while ((entry = readdir(dir)))
 	{
 		if (sub_count > MAX_WIDTH)
 		{
-			ft_printf("%s: reached max number of entries. exiting.\n", path);
+			ft_dprintf(STDERR_FD, "ft_ls: can't list '%s': reached max number of entries.\n", path);
 			exit(Fail_serious);
 		}
 		sub_paths[sub_count] = patcat(path, entry->d_name);
@@ -458,7 +458,7 @@ static void	list_dir(const char *path, int depth, unsigned options)
 		ft_printf("\n");
 	if (depth > STARTING_DEPTH || (options & LS_RECURSIVE))
 		ft_printf("%s:\n", path);
-	list_paths(sub_paths, sub_count, depth + 1, options);
+	list_paths((const char **)sub_paths, sub_count, depth + 1, options);
 	int j = 0;
 	while (j < sub_count)
 	{
@@ -471,13 +471,13 @@ int		main(int argc, const char **argv)
 {
 	unsigned	options;
 	int			i;
-	char		*paths[MAX_WIDTH];
+	const char	*paths[MAX_WIDTH];
 	int			path_count;
 
 	options = parse_options(argc, argv);
+	path_count = 0;
 	if (argc > 1)
 	{
-		path_count = 0;
 		i = 1;
 		while (i < argc)
 		{
@@ -487,7 +487,7 @@ int		main(int argc, const char **argv)
 				continue;
 			}
 			gate(path_count < MAX_WIDTH, "ft_ls: too many files. exiting.\n", Fail_serious);
-			paths[path_count] = ft_strdup(argv[i]);
+			paths[path_count] = argv[i];
 			path_count++;
 			i++;
 		}

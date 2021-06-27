@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2021/06/26 02:59:00 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 14:20:18 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@
 
 #define HAS_FILENAMES 1
 #define LS_LIST_ALL (1<<1)
-#define LS_VERBOSE (1<<2)
+#define LS_DETAILED (1<<2)
 #define LS_SORT_REVERSE (1<<3)
 #define LS_RECURSIVE (1<<4)
 #define LS_SORT_BY_TIME (1<<5)
@@ -40,8 +40,8 @@ enum e_exitcode
 struct		s_finfo
 {
 	struct stat		status;
-	char			*name;
-	char			*fullname;
+	const char		*fullname;
+	const char		*name;
 	char			*owner;
 	char			*group;
 };

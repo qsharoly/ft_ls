@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/04 16:08:51 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/06/27 09:28:59 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 13:24:45 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,6 +84,7 @@ char			*ft_strnstr(char const *haystack,
 int				ft_sqrt(int	nb);
 int				ft_atoi(char const *str);
 void			*ft_memalloc(size_t size);
+void			*ft_calloc(size_t num, size_t size);
 void			ft_memdel(void **ap);
 char			*ft_strnew(size_t size);
 void			ft_strdel(char **as);

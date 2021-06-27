@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/01/14 15:31:58 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/10 07:37:59 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/27 11:40:16 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 # include <stdarg.h>
 
 # define STDOUT_FD 1
+# define STDERR_FD 2
 # define BUFFER_SIZE 4096
 
 /*
@@ -76,6 +77,7 @@ typedef struct	s_parts
 }				t_parts;
 
 int				ft_printf(const char *format, ...);
+int				ft_dprintf(int fd, const char *format, ...);
 int				ft_snprintf(char *buf, int max, const char *format, ...);
 
 void			pf_error(const char *msg);
