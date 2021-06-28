@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/27 22:33:51 by debby            ###   ########.fr       */
+/*   Updated: 2021/06/28 13:30:53 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -464,9 +464,14 @@ static int	list_dir(const char *path, int depth, unsigned options)
 	int				sub_count;
 	int				ret;
 
-	gate(depth <= MAX_DEPTH, "ft_ls: can't list '%s': reached max directory depth.\n", path, Fail_minor);
+	gate(depth <= MAX_DEPTH, "ft_ls: can't list '%s': reached max directory depth.\n", path, Fail_serious);
 	dir = opendir(path);
-	gate(!!dir, "ft_ls: cannot open directory '%s': ", path, Fail_serious);
+	if (!dir)
+	{
+		ft_dprintf(STDERR, "ft_ls: cannot open directory '%s': ", path);
+		perror("");
+		return Fail_minor;
+	}
 	sub_count = 0;
 	while ((entry = readdir(dir)))
 	{
