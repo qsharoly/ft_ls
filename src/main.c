@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/09/01 19:02:49 by debby            ###   ########.fr       */
+/*   Updated: 2021/09/01 19:29:31 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@
 
 #include <stdbool.h>
 static bool	g_had_minor_errors = false;
+const char	*g_program_name = "ft_ls";
 
 static void	list_dir(const char *path, int depth, unsigned options);
 
@@ -131,7 +132,7 @@ char	*patcat(const char *path, const char *name)
 	str = malloc(ft_strlen(path) + 1 + ft_strlen(name) + 1);
 	if (!str)
 	{
-		panic (Fail_serious, "ft_ls: allocation failed");
+		panic (Fail_serious, "%s: allocation failed", g_program_name);
 	}
 	ft_strcpy(str, path);
 	if (!ft_strequ(path, "/"))
@@ -320,7 +321,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		new_info = (struct s_finfo *)ft_calloc(1, sizeof(struct s_finfo));
 		if (!new_info)
 		{
-			panic(Fail_serious, "ft_ls: allocation failed");
+			panic(Fail_serious, "%s: allocation failed", g_program_name);
 		}
 		//dont go into links in detailed mode
 		if (options & LS_DETAILED)
@@ -333,7 +334,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		}
 		if (tmp_res == -1)
 		{
-			ft_dprintf(STDERR, "ft_ls: cannot access '%s': %s\n", paths[i], strerror(errno));
+			ft_dprintf(STDERR, "%s: cannot access '%s': %s\n", g_program_name, paths[i], strerror(errno));
 			free(new_info);
 			i++;
 			g_had_minor_errors = true;
@@ -348,22 +349,22 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 			tmp_passwd = getpwuid(new_info->status.st_uid);
 			if (!tmp_passwd)
 			{
-				panic(Fail_serious, "ft_ls: unable to get owner's name");
+				panic(Fail_serious, "%s: unable to get owner's name", g_program_name);
 			}
 			new_info->owner = ft_strdup(tmp_passwd->pw_name);
 			if (!new_info->owner)
 			{
-				panic(Fail_serious, "ft_ls: allocation failed");
+				panic(Fail_serious, "%s: allocation failed", g_program_name);
 			}
 			tmp_group = getgrgid(new_info->status.st_gid);
 			if (!tmp_group)
 			{
-				panic(Fail_serious, "ft_ls: unable to get groupname");
+				panic(Fail_serious, "%s: unable to get groupname", g_program_name);
 			}
 			new_info->group = ft_strdup(tmp_group->gr_name);
 			if (!new_info->group)
 			{
-				panic(Fail_serious, "ft_ls: allocation failed");
+				panic(Fail_serious, "%s: allocation failed", g_program_name);
 			}
 			cols.lnk = ft_max(cols.lnk, n_digits(new_info->status.st_nlink));
 			cols.size = ft_max(cols.size, n_digits(new_info->status.st_size));
@@ -508,12 +509,12 @@ static void	list_dir(const char *path, int depth, unsigned options)
 
 	if (depth >= MAX_DEPTH)
 	{
-		panic(Fail_serious, "ft_ls: can't list '%s': reached max directory depth.\n", path);
+		panic(Fail_serious, "%s: can't list '%s': reached max directory depth.\n", g_program_name, path);
 	}
 	dir = opendir(path);
 	if (!dir)
 	{
-		ft_dprintf(STDERR, "ft_ls: cannot open directory '%s': %s", path, strerror(errno));
+		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s", g_program_name, path, strerror(errno));
 		g_had_minor_errors = true;
 		return;
 	}
@@ -522,7 +523,7 @@ static void	list_dir(const char *path, int depth, unsigned options)
 	{
 		if (sub_count >= MAX_WIDTH)
 		{
-			panic(Fail_serious, "ft_ls: can't list '%s': reached max number of entries.\n", path);
+			panic(Fail_serious, "%s: can't list '%s': reached max number of entries.\n", g_program_name, path);
 		}
 		sub_paths[sub_count] = patcat(path, entry->d_name);
 		sub_count++;
@@ -544,6 +545,7 @@ int		main(int argc, const char **argv)
 	const char	*paths[MAX_WIDTH];
 	int			path_count;
 
+	g_program_name = argv[0];
 	options = parse_options(argc, argv);
 	path_count = 0;
 	if (argc > 1)
@@ -558,7 +560,7 @@ int		main(int argc, const char **argv)
 			}
 			if (path_count >= MAX_WIDTH)
 			{
-				panic(Fail_serious, "%s: too many files. exiting.\n", argv[0]);
+				panic(Fail_serious, "%s: too many files. exiting.\n", g_program_name);
 			}
 			paths[path_count] = argv[i];
 			path_count++;
