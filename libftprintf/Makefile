@@ -2,11 +2,11 @@ NAME = libftprintf.a
 INCDIR = includes 
 OBJDIR = obj
 SRCDIR = src
-LIBFT = ../libft
-LFT_INCDIR = $(LIBFT)/includes
+LFT_DIR = ../libft
+LFT = $(LFT_DIR)/libft.a
 CC = gcc
 CCFLAGS = -Wall -Wextra -Werror
-INCFLAGS = -I$(INCDIR) -I$(LFT_INCDIR)
+INCFLAGS = -I$(INCDIR) -I$(LFT_DIR)/includes
 
 #Disable union ABI warning on linux gcc
 UNAME_S = $(shell uname -s)
@@ -16,8 +16,11 @@ ifeq ($(CC), gcc)
 endif
 endif
 
-ifdef DEBUG
+ifeq ($(debug), yes)
 	CCFLAGS += -g
+endif
+ifeq ($(optimize), yes)
+	CCFLAGS += -O3
 endif
 
 SRC = ft_printf.c\
@@ -49,15 +52,18 @@ OBJ = $(SRC:%.c=$(OBJDIR)/%.o)
 
 $(shell mkdir -p $(OBJDIR) $(OBJDIR)/bignum $(OBJDIR)/float)
 
+export debug
+export optimize
+export CC
 
 all: $(NAME)
 
-export DEBUG
-export CC
-$(NAME): $(OBJ)
-	make -C $(LIBFT)
+$(LFT):
+	make -C $(LFT_DIR)
+
+$(NAME): $(OBJ) $(LFT)
 	@echo "# packing $(NAME)"
-	cp $(LIBFT)/libft.a ./$(NAME)
+	cp $(LFT_DIR)/$(LFT) ./$(NAME)
 	ar rcs $(NAME) $(OBJ)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c includes/libftprintf.h
@@ -72,9 +78,9 @@ $(OBJDIR)/float/*.o: includes/float.h
 
 clean:
 	rm -rf $(OBJDIR)
-	make -C $(LIBFT) clean
+	make -C $(LFT_DIR) clean
 fclean: clean
 	rm -f $(NAME)
-	make -C $(LIBFT) fclean
+	make -C $(LFT_DIR) fclean
 re: fclean
 	make all

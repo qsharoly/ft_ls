@@ -1,20 +1,23 @@
 NAME = libft.a
 SONAME = libft.so
-CC = gcc
+CC = clang
 CCFLAGS = -Wall -Wextra -Werror
 SRCDIR = .
 INCDIR = includes
 OBJDIR = objects
 DEPDIR = deps
-DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+DEPFLAGS := -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
-ifdef DEBUG
+ifeq ($(debug), yes)
 	CCFLAGS += -g
 endif
+ifeq ($(optimize), yes)
+	CCFLAGS += -O3
+endif
 
-SRC = $(shell ls ft_*.c)
-OBJ = $(SRC:%.c=$(OBJDIR)/%.o)
-DEPS = $(SRC:%.c=$(DEPDIR)/%.d)
+SRC := $(shell ls ft_*.c)
+OBJ := $(SRC:%.c=$(OBJDIR)/%.o)
+DEPS := $(SRC:%.c=$(DEPDIR)/%.d)
 
 $(shell mkdir -p $(OBJDIR))
 $(shell mkdir -p $(DEPDIR))
@@ -32,9 +35,9 @@ so: $(OBJ)
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPDIR)/%.d
 ##	$(CC) -c $< -o $@ -I $(INCDIR) $(CCFLAGS) $(DEPFLAGS)
-	$(CC) -O3 -fpic -c $< -o $@ -I $(INCDIR) $(CCFLAGS) $(DEPFLAGS)
+	$(CC) -fpic -c $< -o $@ -I $(INCDIR) $(CCFLAGS) -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
-$(DEPDIR)/%d: ;
+$(DEPDIR)/%.d: ;
 
 clean:
 	rm -rf $(OBJDIR) $(DEPDIR)

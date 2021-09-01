@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/06/28 13:30:53 by debby            ###   ########.fr       */
+/*   Updated: 2021/08/23 06:25:23 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -105,13 +105,19 @@ static unsigned parse_options(int argc, const char **argv)
 	return (options);
 }
 
-void	gate(int condition, const char *message_fmt, const char *message_prm, enum e_exitcode code)
+
+__attribute__((__format__(__printf__, 3, 4)))
+void	gate(int condition, enum e_exitcode status, const char *message_fmt, ...)
 {
-	if (!condition)
+	va_list	ap;
+
+	if (condition)
 	{
-		ft_dprintf(STDERR, message_fmt, message_prm);
+		va_start(ap, message_fmt);
+		ft_vdprintf(STDERR, message_fmt, ap);
+		va_end(ap);
 		perror("");
-		exit(code);
+		exit(status);
 	}
 }
 
@@ -121,11 +127,7 @@ char	*patcat(const char *path, const char *name)
 	char	*str;
 
 	str = malloc(ft_strlen(path) + 1 + ft_strlen(name) + 1);
-	if (!str)
-	{
-		perror("ft_ls: allocation failed");
-		exit(Fail_serious);
-	}
+	gate(!str, Fail_serious, "ft_ls: allocation failed");
 	ft_strcpy(str, path);
 	if (!ft_strequ(path, "/"))
 		ft_strcat(str, "/");
@@ -301,7 +303,7 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 		}
 		struct s_finfo	*new_info;
 		new_info = (struct s_finfo *)ft_calloc(1, sizeof(struct s_finfo));
-		gate(!!new_info, "ft_ls: allocation failed", "", Fail_serious);
+		gate(!new_info, Fail_serious, "ft_ls: allocation failed");
 		//dont go into links in detailed mode
 		if (options & LS_DETAILED)
 			tmp_res = lstat(paths[i], &new_info->status);
@@ -322,13 +324,13 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 			struct passwd	*tmp_passwd;
 			struct group	*tmp_group;
 			tmp_passwd = getpwuid(new_info->status.st_uid);
-			gate(!!tmp_passwd, "ft_ls: unable to get owner's name", "", Fail_serious);
+			gate(!tmp_passwd, Fail_serious, "ft_ls: unable to get owner's name");
 			new_info->owner = ft_strdup(tmp_passwd->pw_name);
-			gate(!!new_info->owner, "ft_ls: allocation failed", "", Fail_serious);
+			gate(!new_info->owner, Fail_serious, "ft_ls: allocation failed");
 			tmp_group = getgrgid(new_info->status.st_gid);
-			gate(!!tmp_group, "ft_ls: unable to get groupname", "", Fail_serious);
+			gate(!tmp_group, Fail_serious, "ft_ls: unable to get groupname");
 			new_info->group = ft_strdup(tmp_group->gr_name);
-			gate(!!new_info->group, "ft_ls: allocation failed", "", Fail_serious);
+			gate(!new_info->group, Fail_serious, "ft_ls: allocation failed");
 			cols.lnk = ft_max(cols.lnk, n_digits(new_info->status.st_nlink));
 			cols.size = ft_max(cols.size, n_digits(new_info->status.st_size));
 			cols.owner = ft_max(cols.owner, ft_strlen(new_info->owner));
@@ -371,7 +373,7 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 	{
 		// TODO(qsharoly): ls-like column widths
 		tmp_res = ioctl(0, TIOCGWINSZ, &winsize);
-		gate(tmp_res != -1, "ft_ls: failed to get terminal dimensions", Fail_serious);
+		gate(!(tmp_res >= 0), "ft_ls: failed to get terminal dimensions", Fail_serious);
 		if (cols.name > 0 && winsize.ws_col > cols.name)
 			ncol = winsize.ws_col / cols.name;
 	}
@@ -464,7 +466,7 @@ static int	list_dir(const char *path, int depth, unsigned options)
 	int				sub_count;
 	int				ret;
 
-	gate(depth <= MAX_DEPTH, "ft_ls: can't list '%s': reached max directory depth.\n", path, Fail_serious);
+	gate(!(depth <= MAX_DEPTH), Fail_serious, "ft_ls: can't list '%s': reached max directory depth.\n", path);
 	dir = opendir(path);
 	if (!dir)
 	{
@@ -475,7 +477,7 @@ static int	list_dir(const char *path, int depth, unsigned options)
 	sub_count = 0;
 	while ((entry = readdir(dir)))
 	{
-		gate(sub_count < MAX_WIDTH, "ft_ls: can't list '%s': reached max number of entries.\n", path, Fail_serious);
+		gate(!(sub_count < MAX_WIDTH), Fail_serious, "ft_ls: can't list '%s': reached max number of entries.\n", path);
 		sub_paths[sub_count] = patcat(path, entry->d_name);
 		sub_count++;
 	}
@@ -510,7 +512,7 @@ int		main(int argc, const char **argv)
 				i++;
 				continue;
 			}
-			gate(path_count < MAX_WIDTH, "ft_ls: too many files. exiting.\n", "", Fail_serious);
+			gate(!(path_count < MAX_WIDTH), Fail_serious, "%s: too many files. exiting.\n", argv[0]);
 			paths[path_count] = argv[i];
 			path_count++;
 			i++;

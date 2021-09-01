@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/27 18:24:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/06/27 16:12:36 by debby            ###   ########.fr       */
+/*   Updated: 2021/08/23 05:33:46 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,7 +68,6 @@ int			ft_snprintf(char *str, int max, const char *format, ...)
 	t_stream	b;
 
 	b = pf_stream_init(STDOUT, str, max, putc_impl_snprintf);
-	init_conv_table();
 	va_start(ap, format);
 	print_args(&b, format, ap);
 	va_end(ap);

@@ -6,12 +6,26 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 13:26:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/02/28 14:00:56 by debby            ###   ########.fr       */
+/*   Updated: 2021/08/23 05:40:34 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 #include "libftprintf.h"
+
+void 	(* const g_conv_table[256])(t_stream *, t_fmt *, va_list) = {
+	['%'] = conv_percent,
+	['c'] = conv_char,
+	['s'] = conv_str,
+	['p'] = conv_ptr,
+	['d'] = conv_signed,
+	['i'] = conv_signed,
+	['u'] = conv_unsigned,
+	['o'] = conv_unsigned,
+	['x'] = conv_unsigned,
+	['X'] = conv_unsigned,
+	['f'] = conv_floating,
+};
 
 static int			is_printf_flag(int c)
 {
@@ -118,24 +132,6 @@ static const char	*parse_precision(const char *pos, t_fmt *fmt, va_list ap)
 		fmt->has_precision = 1;
 	}
 	return (pos);
-}
-
-extern void			(*g_conv_table[256])(t_stream *, t_fmt *, va_list);
-
-void				init_conv_table(void)
-{
-	ft_bzero(g_conv_table, sizeof(void *) * 256);
-	g_conv_table['%'] = conv_percent;
-	g_conv_table['c'] = conv_char;
-	g_conv_table['s'] = conv_str;
-	g_conv_table['p'] = conv_ptr;
-	g_conv_table['d'] = conv_signed;
-	g_conv_table['i'] = conv_signed;
-	g_conv_table['u'] = conv_unsigned;
-	g_conv_table['o'] = conv_unsigned;
-	g_conv_table['x'] = conv_unsigned;
-	g_conv_table['X'] = conv_unsigned;
-	g_conv_table['f'] = conv_floating;
 }
 
 static const char	*parse_conv(const char *pos, t_fmt *f)

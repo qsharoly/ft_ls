@@ -1,0 +1,25 @@
+SRC +=\
+libftprintf/src/ft_printf.c\
+libftprintf/src/ft_snprintf.c\
+libftprintf/src/pf_conv_basic.c\
+libftprintf/src/pf_conv_diuox.c\
+libftprintf/src/pf_conv_floating.c\
+libftprintf/src/pf_conv_putnbr.c\
+libftprintf/src/pf_dtoa.c\
+libftprintf/src/pf_dtoa_quick.c\
+libftprintf/src/pf_parse.c\
+libftprintf/src/pf_stream.c\
+libftprintf/src/pf_stream_helpers.c\
+libftprintf/src/pf_utoa_base.c\
+libftprintf/src/bignum/big_add.c\
+libftprintf/src/bignum/big_from_digit.c\
+libftprintf/src/bignum/big_mul.c\
+libftprintf/src/bignum/big_raise.c\
+libftprintf/src/bignum/big_to_str.c\
+libftprintf/src/bignum/big_zero.c\
+libftprintf/src/float/ft_fabs.c\
+libftprintf/src/float/ft_isinf.c\
+libftprintf/src/float/ft_isnan.c\
+libftprintf/src/float/ft_isneg.c\
+libftprintf/src/float/ft_issub.c\
+libftprintf/src/float/ft_trunc.c\
