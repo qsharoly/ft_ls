@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/08/23 06:25:23 by debby            ###   ########.fr       */
+/*   Updated: 2021/09/01 19:02:49 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,10 @@
 #include <grp.h> //getgrgid()
 #include <unistd.h> //readlink()
 
-static int	list_dir(const char *path, int depth, unsigned options);
+#include <stdbool.h>
+static bool	g_had_minor_errors = false;
+
+static void	list_dir(const char *path, int depth, unsigned options);
 
 static void	print_help()
 {
@@ -52,7 +55,7 @@ static void	print_help()
 	);
 }
 
-static void	parse_option(const char *str, unsigned *options, const char *av0)
+static void	parse_option(const char *str, unsigned *options, const char *program_name)
 {
 	int		j;
 	char	c;
@@ -81,8 +84,8 @@ static void	parse_option(const char *str, unsigned *options, const char *av0)
 			*options |= LS_SINGLE_COLUMN;
 		else
 		{
-			ft_dprintf(STDERR, "%s: invalid option -- '%c'\n", av0, c);
-			ft_dprintf(STDERR, "Try '%s --help' for more information.\n", av0);
+			ft_dprintf(STDERR, "%s: invalid option -- '%c'\n", program_name, c);
+			ft_dprintf(STDERR, "Try '%s --help' for more information.\n", program_name);
 			exit(Fail_serious);
 		}
 		j++;
@@ -99,26 +102,25 @@ static unsigned parse_options(int argc, const char **argv)
 	while (i < argc)
 	{
 		if (argv[i][0] == '-')
+		{
 			parse_option(&argv[i][1], &options, argv[0]);
+		}
 		i++;
 	}
 	return (options);
 }
 
 
-__attribute__((__format__(__printf__, 3, 4)))
-void	gate(int condition, enum e_exitcode status, const char *message_fmt, ...)
+__attribute__((__format__(__printf__, 2, 3)))
+void	panic(enum e_exitcode status, const char *message_fmt, ...)
 {
 	va_list	ap;
 
-	if (condition)
-	{
-		va_start(ap, message_fmt);
-		ft_vdprintf(STDERR, message_fmt, ap);
-		va_end(ap);
-		perror("");
-		exit(status);
-	}
+	va_start(ap, message_fmt);
+	ft_vdprintf(STDERR, message_fmt, ap);
+	va_end(ap);
+	perror("");
+	exit(status);
 }
 
 
@@ -127,10 +129,15 @@ char	*patcat(const char *path, const char *name)
 	char	*str;
 
 	str = malloc(ft_strlen(path) + 1 + ft_strlen(name) + 1);
-	gate(!str, Fail_serious, "ft_ls: allocation failed");
+	if (!str)
+	{
+		panic (Fail_serious, "ft_ls: allocation failed");
+	}
 	ft_strcpy(str, path);
 	if (!ft_strequ(path, "/"))
+	{
 		ft_strcat(str, "/");
+	}
 	ft_strcat(str, name);
 	return (str);
 }
@@ -182,7 +189,9 @@ int		mtime(const void *l, const void *r)
 	right = *(struct s_finfo **)r;
 	diff = right->status.st_mtime - left->status.st_mtime;
 	if (diff == 0)
+	{
 		return (alpha(l, r));
+	}
 	return (diff);
 }
 
@@ -196,7 +205,9 @@ int		rev_mtime(const void *l, const void *r)
 	right = *(struct s_finfo **)r;
 	diff = left->status.st_mtime - right->status.st_mtime;
 	if (diff == 0)
+	{
 		return (rev_alpha(l, r));
+	}
 	return (diff);
 }
 
@@ -254,11 +265,16 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths cols)
 	time_t now = time(NULL);
 #define SIX_MONTHS_AS_SECONDS 15778476
 	if (now < f->status.st_mtime || now - f->status.st_mtime > SIX_MONTHS_AS_SECONDS)
+	{
 		hm_or_yy = _yyyy;
+	}
 	else
+	{
 		hm_or_yy = hh_mm;
+	}
 	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %-s", perms, cols.lnk - 1, nlink, cols.owner, f->owner, cols.group, f->group, cols.size - 1, fsize, mmm_dd, hm_or_yy, f->name);
-	if (S_ISLNK(mode)) {
+	if (S_ISLNK(mode))
+	{
 #define LINKBUF 80
 		char linkbuf[LINKBUF];
 		size_t linklen = readlink(f->fullname, linkbuf, LINKBUF);
@@ -268,7 +284,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths cols)
 		ft_printf("\n");
 }
 
-int	list_paths(const char **paths, int path_count, int depth, int options)
+void	list_paths(const char **paths, int path_count, int depth, int options)
 {
 	struct s_finfo		*infos[MAX_WIDTH];
 	const char			*basename;
@@ -277,7 +293,6 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 	size_t				tot_blocks;
 	struct s_col_widths	cols;
 	int					info_count;
-	int					ret;
 
 	tot_blocks = 0;
 	cols.lnk = 0;
@@ -303,18 +318,25 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 		}
 		struct s_finfo	*new_info;
 		new_info = (struct s_finfo *)ft_calloc(1, sizeof(struct s_finfo));
-		gate(!new_info, Fail_serious, "ft_ls: allocation failed");
+		if (!new_info)
+		{
+			panic(Fail_serious, "ft_ls: allocation failed");
+		}
 		//dont go into links in detailed mode
 		if (options & LS_DETAILED)
+		{
 			tmp_res = lstat(paths[i], &new_info->status);
+		}
 		else
+		{
 			tmp_res = stat(paths[i], &new_info->status);
+		}
 		if (tmp_res == -1)
 		{
 			ft_dprintf(STDERR, "ft_ls: cannot access '%s': %s\n", paths[i], strerror(errno));
 			free(new_info);
 			i++;
-			ret = Fail_minor;
+			g_had_minor_errors = true;
 			continue;
 		}
 		new_info->fullname = paths[i];
@@ -324,13 +346,25 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 			struct passwd	*tmp_passwd;
 			struct group	*tmp_group;
 			tmp_passwd = getpwuid(new_info->status.st_uid);
-			gate(!tmp_passwd, Fail_serious, "ft_ls: unable to get owner's name");
+			if (!tmp_passwd)
+			{
+				panic(Fail_serious, "ft_ls: unable to get owner's name");
+			}
 			new_info->owner = ft_strdup(tmp_passwd->pw_name);
-			gate(!new_info->owner, Fail_serious, "ft_ls: allocation failed");
+			if (!new_info->owner)
+			{
+				panic(Fail_serious, "ft_ls: allocation failed");
+			}
 			tmp_group = getgrgid(new_info->status.st_gid);
-			gate(!tmp_group, Fail_serious, "ft_ls: unable to get groupname");
+			if (!tmp_group)
+			{
+				panic(Fail_serious, "ft_ls: unable to get groupname");
+			}
 			new_info->group = ft_strdup(tmp_group->gr_name);
-			gate(!new_info->group, Fail_serious, "ft_ls: allocation failed");
+			if (!new_info->group)
+			{
+				panic(Fail_serious, "ft_ls: allocation failed");
+			}
 			cols.lnk = ft_max(cols.lnk, n_digits(new_info->status.st_nlink));
 			cols.size = ft_max(cols.size, n_digits(new_info->status.st_size));
 			cols.owner = ft_max(cols.owner, ft_strlen(new_info->owner));
@@ -354,17 +388,23 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 	{
 		compare = rev_alpha;
 		if (options & LS_SORT_BY_TIME)
+		{
 			compare = rev_mtime;
+		}
 	}
 	else
 	{
 		compare = alpha;
 		if (options & LS_SORT_BY_TIME)
+		{
 			compare = mtime;
+		}
 	}
 	qsort(infos, info_count, sizeof(struct s_finfo *), compare);
 	if (options & LS_DETAILED && depth > STARTING_DEPTH)
+	{
 		ft_printf("total %lu\n", tot_blocks / BLOCK_HACK);
+	}
 	int		ncol;
 	ncol = 1;
 	/*
@@ -404,7 +444,7 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 		ft_printf("%-*s", cols.name, infos[i]->name);
 		if (0 == (i + 1) % ncol || i == info_count - 1)
 			ft_printf("\n");
-			*/
+		*/
 		had_printed = 1;
 		i++;
 	}
@@ -437,12 +477,14 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 				if (depth == STARTING_DEPTH && had_printed == 0)
 				{
 					if (!(options & LS_DETAILED && path_count == 1))
+					{
 						ft_printf("%s:\n", infos[i]->fullname);
+					}
 					had_printed = 1;
 				}
 				else
 					ft_printf("\n%s:\n", infos[i]->fullname);
-				ret = list_dir(infos[i]->fullname, depth, options);
+				list_dir(infos[i]->fullname, depth, options);
 			}
 			i++;
 		}
@@ -455,41 +497,44 @@ int	list_paths(const char **paths, int path_count, int depth, int options)
 		free(infos[i]);
 		i++;
 	}
-	return (ret);
 }
 
-static int	list_dir(const char *path, int depth, unsigned options)
+static void	list_dir(const char *path, int depth, unsigned options)
 {
 	DIR				*dir;
 	struct dirent	*entry;
 	char			*sub_paths[MAX_WIDTH];
 	int				sub_count;
-	int				ret;
 
-	gate(!(depth <= MAX_DEPTH), Fail_serious, "ft_ls: can't list '%s': reached max directory depth.\n", path);
+	if (depth >= MAX_DEPTH)
+	{
+		panic(Fail_serious, "ft_ls: can't list '%s': reached max directory depth.\n", path);
+	}
 	dir = opendir(path);
 	if (!dir)
 	{
-		ft_dprintf(STDERR, "ft_ls: cannot open directory '%s': ", path);
-		perror("");
-		return Fail_minor;
+		ft_dprintf(STDERR, "ft_ls: cannot open directory '%s': %s", path, strerror(errno));
+		g_had_minor_errors = true;
+		return;
 	}
 	sub_count = 0;
 	while ((entry = readdir(dir)))
 	{
-		gate(!(sub_count < MAX_WIDTH), Fail_serious, "ft_ls: can't list '%s': reached max number of entries.\n", path);
+		if (sub_count >= MAX_WIDTH)
+		{
+			panic(Fail_serious, "ft_ls: can't list '%s': reached max number of entries.\n", path);
+		}
 		sub_paths[sub_count] = patcat(path, entry->d_name);
 		sub_count++;
 	}
 	closedir(dir);
-	ret = list_paths((const char **)sub_paths, sub_count, depth + 1, options);
+	list_paths((const char **)sub_paths, sub_count, depth + 1, options);
 	int j = 0;
 	while (j < sub_count)
 	{
 		free(sub_paths[j]);
 		j++;
 	}
-	return (ret);
 }
 
 int		main(int argc, const char **argv)
@@ -498,7 +543,6 @@ int		main(int argc, const char **argv)
 	int			i;
 	const char	*paths[MAX_WIDTH];
 	int			path_count;
-	int			ret;
 
 	options = parse_options(argc, argv);
 	path_count = 0;
@@ -512,19 +556,33 @@ int		main(int argc, const char **argv)
 				i++;
 				continue;
 			}
-			gate(!(path_count < MAX_WIDTH), Fail_serious, "%s: too many files. exiting.\n", argv[0]);
+			if (path_count >= MAX_WIDTH)
+			{
+				panic(Fail_serious, "%s: too many files. exiting.\n", argv[0]);
+			}
 			paths[path_count] = argv[i];
 			path_count++;
 			i++;
 		}
 	}
 	if (path_count > 0)
-		ret = list_paths(paths, path_count, STARTING_DEPTH, options);
+	{
+		list_paths(paths, path_count, STARTING_DEPTH, options);
+	}
 	else
 	{
 		if (options & LS_RECURSIVE)
+		{
 			ft_printf(".:\n");
-		ret = list_dir(".", STARTING_DEPTH, options);
+		}
+		list_dir(".", STARTING_DEPTH, options);
 	}
-	return (ret);
+	if (g_had_minor_errors)
+	{
+		return (Fail_minor);
+	}
+	else
+	{
+		return (Success);
+	}
 }
