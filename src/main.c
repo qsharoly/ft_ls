@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/07 19:25:45 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/07 21:13:00 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -407,7 +407,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		ft_printf("total %lu\n", tot_blocks / BLOCK_HACK);
 	}
 	int		ncol;
-	ncol = 1;
+	ncol = 0;
 	/*
 	struct winsize	winsize;
 	if (!(options & LS_SINGLE_COLUMN || options & LS_DETAILED))
@@ -438,6 +438,11 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		else if (options & LS_SINGLE_COLUMN || ncol == 1)
 		{
 			ft_printf("%s\n", infos[i]->name);
+		}
+		else {
+			ft_printf("%s  ", infos[i]->name);
+			if (i == info_count - 1)
+				ft_printf("\n");
 		}
 		/*
 		//TODO: add transposed column output
