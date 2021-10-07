@@ -1,32 +1,31 @@
 NAME=ft_ls
-LFT=libft
-LPF=libftprintf
-CC=gcc
-CCFLAGS=-Wall -Wextra -Werror
-INCFLAGS=-Iincludes -I$(LFT)/includes -I$(LPF)/includes
-LIBFLAGS=-L$(LFT) -lft -L$(LPF) -lftprintf
-SRC=src/main.c
 
-DEBUG=1
-ifdef DEBUG
-	CCFLAGS += -g
+CC := /home/debby/Downloads/zig/zig-linux-x86_64-0.8.0/zig cc
+#CC := /home/debby/Downloads/zig/zig-linux-x86_64-0.9.0-dev.847+c465b34d3/zig cc
+
+CFLAGS +=-Iincludes -Ilibft/includes -Ilibftprintf/includes
+CFLAGS +=-Wall -Wextra -Werror -O3
+
+#each module will add to this
+SRC := src/main.c\
+
+include libft/module
+include libftprintf/module
+
+debug = yes
+ifeq ($(debug), yes)
+	CFLAGS +=-g
 endif
 
 .phony: all clean fclean re
 
-all: $(NAME) $(LFT) $(LPF)
+all:  $(NAME)
 
-export DEBUG
-export CC
-$(NAME): $(SRC) includes/ft_ls.h
-	make -C $(LPF)
-	$(CC) $(SRC) -o $(NAME) $(CCFLAGS) $(INCFLAGS) $(LIBFLAGS)
+$(NAME): $(SRC) includes/*.h libft/includes/*.h libftprintf/includes/*.h
+	$(CC) $(CFLAGS) -o $@ $(SRC) $(LIBS)
 
 clean:
-	rm -f *.o
-	make -C $(LPF) clean
 fclean: clean
-	rm -f ft_ls 
-	make -C $(LPF) fclean
+	rm -f $(NAME) 
 re: fclean
 	make all

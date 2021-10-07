@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/09/01 19:29:31 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/07 19:25:45 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@
 
 #include <stdbool.h>
 static bool	g_had_minor_errors = false;
-const char	*g_program_name = "ft_ls";
+const char	*g_program_name = "ft_ls"; //initialize to default name
 
 static void	list_dir(const char *path, int depth, unsigned options);
 
@@ -56,7 +56,7 @@ static void	print_help()
 	);
 }
 
-static void	parse_option(const char *str, unsigned *options, const char *program_name)
+static void	parse_option(const char *str, unsigned *options)
 {
 	int		j;
 	char	c;
@@ -85,8 +85,8 @@ static void	parse_option(const char *str, unsigned *options, const char *program
 			*options |= LS_SINGLE_COLUMN;
 		else
 		{
-			ft_dprintf(STDERR, "%s: invalid option -- '%c'\n", program_name, c);
-			ft_dprintf(STDERR, "Try '%s --help' for more information.\n", program_name);
+			ft_dprintf(STDERR, "%s: invalid option -- '%c'\n", g_program_name, c);
+			ft_dprintf(STDERR, "Try '%s --help' for more information.\n", g_program_name);
 			exit(Fail_serious);
 		}
 		j++;
@@ -104,7 +104,7 @@ static unsigned parse_options(int argc, const char **argv)
 	{
 		if (argv[i][0] == '-')
 		{
-			parse_option(&argv[i][1], &options, argv[0]);
+			parse_option(&argv[i][1], &options);
 		}
 		i++;
 	}
