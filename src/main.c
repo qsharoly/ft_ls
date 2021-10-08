@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/08 02:02:13 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/08 19:15:13 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@
 static bool	g_had_minor_errors = false;
 const char	*g_program_name = "ft_ls"; //initialize to default name
 
-static void	list_dir(const char *path, int depth, unsigned options);
+static int	scan_dir(char **sub_paths, const char *path, int depth, unsigned options);
 
 static void	print_help()
 {
@@ -385,7 +385,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	/*
 	// too clever:
 	int (*sort_style[4])(const void *left, const void *right) = {
-		alpha, rev_alpha, mtime, rev_mtime
+		alpha, alpha_reverse, mtime, mtime_reverse
 	};
 	compare = sort_style[!!(options & LS_SORT_REVERSE) + 2*!!(options & LS_SORT_BY_TIME)];
 	*/
@@ -492,7 +492,19 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 					ft_printf("\n");
 				if (depth > STARTING_DEPTH || options & LS_RECURSIVE || (depth == STARTING_DEPTH && path_count > 1))
 					ft_printf("%s:\n", infos[i]->fullname);
-				list_dir(infos[i]->fullname, depth, options);
+				char	*sub_paths[MAX_WIDTH];
+				int		sub_count;
+				sub_count = scan_dir(sub_paths, infos[i]->fullname, depth + 1, options);
+				if (sub_count < 0) {
+					continue;
+				}
+				list_paths((const char **)sub_paths, sub_count, depth + 1, options);
+				int j = 0;
+				while (j < sub_count)
+				{
+					free(sub_paths[j]);
+					j++;
+				}
 			}
 			i++;
 		}
@@ -507,13 +519,13 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	}
 }
 
-static void	list_dir(const char *path, int depth, unsigned options)
+static int	scan_dir(char **sub_paths, const char *path, int depth, unsigned options)
 {
 	DIR				*dir;
 	struct dirent	*entry;
-	char			*sub_paths[MAX_WIDTH];
 	int				sub_count;
 
+	(void)options;
 	if (depth >= MAX_DEPTH)
 	{
 		panic(Fail_serious, "%s: can't list '%s': reached max directory depth.\n", g_program_name, path);
@@ -523,7 +535,7 @@ static void	list_dir(const char *path, int depth, unsigned options)
 	{
 		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s", g_program_name, path, strerror(errno));
 		g_had_minor_errors = true;
-		return;
+		return -1;
 	}
 	sub_count = 0;
 	while ((entry = readdir(dir)))
@@ -536,13 +548,7 @@ static void	list_dir(const char *path, int depth, unsigned options)
 		sub_count++;
 	}
 	closedir(dir);
-	list_paths((const char **)sub_paths, sub_count, depth + 1, options);
-	int j = 0;
-	while (j < sub_count)
-	{
-		free(sub_paths[j]);
-		j++;
-	}
+	return sub_count;
 }
 
 int		main(int argc, const char **argv)
@@ -574,18 +580,12 @@ int		main(int argc, const char **argv)
 			i++;
 		}
 	}
-	if (path_count > 0)
+	if (path_count == 0)
 	{
-		list_paths(paths, path_count, STARTING_DEPTH, options);
+		path_count = 1;
+		paths[0] = ".";
 	}
-	else
-	{
-		if (options & LS_RECURSIVE)
-		{
-			ft_printf(".:\n");
-		}
-		list_dir(".", STARTING_DEPTH, options);
-	}
+	list_paths(paths, path_count, STARTING_DEPTH, options);
 	if (g_had_minor_errors)
 	{
 		return (Fail_minor);
