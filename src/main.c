@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/08 20:42:16 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/08 21:02:57 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -161,7 +161,7 @@ int		alpha(const void *l, const void *r)
 	return (ft_stricmp(lname, rname));
 }
 
-int		rev_alpha(const void *l, const void *r)
+int		alpha_reverse(const void *l, const void *r)
 {
 	struct s_finfo	*left;
 	struct s_finfo	*right;
@@ -179,7 +179,7 @@ int		rev_alpha(const void *l, const void *r)
 	return (-ft_stricmp(lname, rname));
 }
 
-//by modification time, newest first, tibreak alphabetically
+//sort by modification time, newest first, tiebreak alphabetically
 int		mtime(const void *l, const void *r)
 {
 	struct s_finfo	*left;
@@ -196,7 +196,7 @@ int		mtime(const void *l, const void *r)
 	return (diff);
 }
 
-int		rev_mtime(const void *l, const void *r)
+int		mtime_reverse(const void *l, const void *r)
 {
 	struct s_finfo	*left;
 	struct s_finfo	*right;
@@ -207,7 +207,7 @@ int		rev_mtime(const void *l, const void *r)
 	diff = left->status.st_mtime - right->status.st_mtime;
 	if (diff == 0)
 	{
-		return (rev_alpha(l, r));
+		return (alpha_reverse(l, r));
 	}
 	return (diff);
 }
@@ -382,29 +382,11 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		i++;
 	}
 	int	(*compare)(const void *left, const void *right);
-	/*
 	// too clever:
 	int (*sort_style[4])(const void *left, const void *right) = {
 		alpha, alpha_reverse, mtime, mtime_reverse
 	};
-	compare = sort_style[!!(options & LS_SORT_REVERSE) + 2*!!(options & LS_SORT_BY_TIME)];
-	*/
-	if (options & LS_SORT_REVERSE)
-	{
-		compare = rev_alpha;
-		if (options & LS_SORT_BY_TIME)
-		{
-			compare = rev_mtime;
-		}
-	}
-	else
-	{
-		compare = alpha;
-		if (options & LS_SORT_BY_TIME)
-		{
-			compare = mtime;
-		}
-	}
+	compare = sort_style[!!(options & LS_SORT_REVERSE) + (!!(options & LS_SORT_BY_TIME) << 1)];
 	qsort(infos, info_count, sizeof(struct s_finfo *), compare);
 	if (options & LS_DETAILED && depth > STARTING_DEPTH)
 	{
