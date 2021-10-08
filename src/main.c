@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/08 19:15:13 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/08 20:17:21 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -486,18 +486,19 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 			}
 			if (S_ISDIR(infos[i]->status.st_mode))
 			{
+				char	*sub_paths[MAX_WIDTH];
+				int		sub_count;
+				sub_count = scan_dir(sub_paths, infos[i]->fullname, depth + 1, options);
+				if (sub_count < 0) {
+					i++;
+					continue;
+				}
 				if (had_printed == 0)
 					had_printed += 1;
 				else
 					ft_printf("\n");
 				if (depth > STARTING_DEPTH || options & LS_RECURSIVE || (depth == STARTING_DEPTH && path_count > 1))
 					ft_printf("%s:\n", infos[i]->fullname);
-				char	*sub_paths[MAX_WIDTH];
-				int		sub_count;
-				sub_count = scan_dir(sub_paths, infos[i]->fullname, depth + 1, options);
-				if (sub_count < 0) {
-					continue;
-				}
 				list_paths((const char **)sub_paths, sub_count, depth + 1, options);
 				int j = 0;
 				while (j < sub_count)
@@ -533,7 +534,7 @@ static int	scan_dir(char **sub_paths, const char *path, int depth, unsigned opti
 	dir = opendir(path);
 	if (!dir)
 	{
-		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s", g_program_name, path, strerror(errno));
+		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s\n", g_program_name, path, strerror(errno));
 		g_had_minor_errors = true;
 		return -1;
 	}

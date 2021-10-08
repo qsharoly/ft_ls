@@ -54,5 +54,11 @@ test "-lR" "default path, recursive, detailed"
 test "-R d1 dirlink" "dir and a dir link, recursive"
 test "-lR d1 dirlink" "dir and a dir link, recursive, detailed"
 
+mkdir -p "eacess"
+chmod u-r "eacess"
+test "-1 -R" "recursive, inacessible directory" 2>/dev/null
+test "-lR" "recursive, detailed, inacessible directory" 2>/dev/null
+rm -rf "eacess"
+
 echo
 echo $OK/$TOTAL Ok 
