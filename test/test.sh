@@ -9,9 +9,9 @@ fi
 if [ ! -x "../ft_ls" ]; then
 	echo "Please run from ft_ls or ft_ls/test directory."
 	exit
+else
+	cp ../ft_ls ft_ls
 fi
-
-cp ../ft_ls ft_ls
 
 function test() {
 	let TOTAL++
@@ -35,8 +35,11 @@ let OK=0
 let TOTAL=0
 
 #step into testing directory tree
-cd tree
+WORKPATH="tree"
 OUTPATH="../output"
+
+cd $WORKPATH
+mkdir -p $OUTPATH
 
 test "-1" "default path, single column"
 test "d1" "single dir"
