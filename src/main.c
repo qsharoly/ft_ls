@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/08 20:17:21 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/08 20:42:16 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -424,7 +424,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	}
 	*/
 	//flag to skip newline before first dir
-	int	had_printed = 0;
+	bool	had_printed = false;
 	//list files
 	i = 0;
 	while (i < info_count)
@@ -457,7 +457,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		if (0 == (i + 1) % ncol || i == info_count - 1)
 			ft_printf("\n");
 		*/
-		had_printed += 1;
+		had_printed = true;
 		i++;
 	}
 	//step into directories
@@ -493,12 +493,13 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 					i++;
 					continue;
 				}
-				if (had_printed == 0)
-					had_printed += 1;
-				else
-					ft_printf("\n");
 				if (depth > STARTING_DEPTH || options & LS_RECURSIVE || (depth == STARTING_DEPTH && path_count > 1))
+				{
+					if (had_printed)
+						ft_printf("\n");
 					ft_printf("%s:\n", infos[i]->fullname);
+					had_printed = true;
+				}
 				list_paths((const char **)sub_paths, sub_count, depth + 1, options);
 				int j = 0;
 				while (j < sub_count)
