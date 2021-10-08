@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2021/06/27 14:20:18 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/08 22:15:05 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 
 #define STARTING_DEPTH 0
 #define MAX_DEPTH 25
-#define MAX_WIDTH 1000
+#define MAX_WIDTH 2000
 
 #define BLOCK_HACK 2
 
