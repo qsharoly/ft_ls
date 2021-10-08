@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/08 21:02:57 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/08 21:35:57 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -325,14 +325,14 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		{
 			panic(Fail_serious, "%s: allocation failed", g_program_name);
 		}
-		//dont go into links in detailed mode
-		if (options & LS_DETAILED)
+		//follow dir links from argv (except in detailed mode)
+		if (depth == STARTING_DEPTH && !(options & LS_DETAILED))
 		{
-			tmp_res = lstat(paths[i], &new_info->status);
+			tmp_res = stat(paths[i], &new_info->status);
 		}
 		else
 		{
-			tmp_res = stat(paths[i], &new_info->status);
+			tmp_res = lstat(paths[i], &new_info->status);
 		}
 		if (tmp_res == -1)
 		{
