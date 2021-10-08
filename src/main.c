@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/07 21:13:00 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/08 02:02:13 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -294,6 +294,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	size_t				tot_blocks;
 	struct s_col_widths	cols;
 	int					info_count;
+	int					nondirs_remaining;
 
 	tot_blocks = 0;
 	cols.lnk = 0;
@@ -302,6 +303,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	cols.owner = 0;
 	cols.group = 0;
 	info_count = 0;
+	nondirs_remaining = 0;
 	i = 0;
 	while (i < path_count)
 	{
@@ -374,6 +376,8 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		cols.name = ft_max(cols.name, ft_strlen(new_info->name));
 		tot_blocks += new_info->status.st_blocks;
 		infos[info_count] = new_info;
+		if (!S_ISDIR(new_info->status.st_mode))
+			nondirs_remaining++;
 		info_count++;
 		i++;
 	}
@@ -439,10 +443,12 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		{
 			ft_printf("%s\n", infos[i]->name);
 		}
-		else {
-			ft_printf("%s  ", infos[i]->name);
-			if (i == info_count - 1)
-				ft_printf("\n");
+		else
+		{
+			if (i == info_count - 1 || (depth == STARTING_DEPTH && --nondirs_remaining == 0))
+				ft_printf("%s\n", infos[i]->name);
+			else
+				ft_printf("%s  ", infos[i]->name);
 		}
 		/*
 		//TODO: add transposed column output
@@ -451,7 +457,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		if (0 == (i + 1) % ncol || i == info_count - 1)
 			ft_printf("\n");
 		*/
-		had_printed = 1;
+		had_printed += 1;
 		i++;
 	}
 	//step into directories
@@ -480,16 +486,12 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 			}
 			if (S_ISDIR(infos[i]->status.st_mode))
 			{
-				if (depth == STARTING_DEPTH && had_printed == 0)
-				{
-					if (!(options & LS_DETAILED && path_count == 1))
-					{
-						ft_printf("%s:\n", infos[i]->fullname);
-					}
-					had_printed = 1;
-				}
+				if (had_printed == 0)
+					had_printed += 1;
 				else
-					ft_printf("\n%s:\n", infos[i]->fullname);
+					ft_printf("\n");
+				if (depth > STARTING_DEPTH || options & LS_RECURSIVE || (depth == STARTING_DEPTH && path_count > 1))
+					ft_printf("%s:\n", infos[i]->fullname);
 				list_dir(infos[i]->fullname, depth, options);
 			}
 			i++;
