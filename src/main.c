@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/08 21:35:57 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/14 23:30:38 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -287,7 +287,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths cols)
 
 void	list_paths(const char **paths, int path_count, int depth, int options)
 {
-	struct s_finfo		*infos[MAX_WIDTH];
+	struct s_finfo		*infos[MAX_BREADTH];
 	const char			*basename;
 	int					i;
 	int					tmp_res;
@@ -468,7 +468,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 			}
 			if (S_ISDIR(infos[i]->status.st_mode))
 			{
-				char	*sub_paths[MAX_WIDTH];
+				char	*sub_paths[MAX_BREADTH];
 				int		sub_count;
 				sub_count = scan_dir(sub_paths, infos[i]->fullname, depth + 1, options);
 				if (sub_count < 0) {
@@ -524,9 +524,9 @@ static int	scan_dir(char **sub_paths, const char *path, int depth, unsigned opti
 	sub_count = 0;
 	while ((entry = readdir(dir)))
 	{
-		if (sub_count >= MAX_WIDTH)
+		if (sub_count >= MAX_BREADTH)
 		{
-			panic(Fail_serious, "%s: can't list '%s': reached max number of entries.\n", g_program_name, path);
+			panic(Fail_serious, "%s: can't list '%s': reached max number of entries per directory.\n", g_program_name, path);
 		}
 		sub_paths[sub_count] = patcat(path, entry->d_name);
 		sub_count++;
@@ -539,7 +539,7 @@ int		main(int argc, const char **argv)
 {
 	unsigned	options;
 	int			i;
-	const char	*paths[MAX_WIDTH];
+	const char	*paths[MAX_BREADTH];
 	int			path_count;
 
 	g_program_name = argv[0];
@@ -555,9 +555,9 @@ int		main(int argc, const char **argv)
 				i++;
 				continue;
 			}
-			if (path_count >= MAX_WIDTH)
+			if (path_count >= MAX_BREADTH)
 			{
-				panic(Fail_serious, "%s: too many files. exiting.\n", g_program_name);
+				panic(Fail_serious, "%s: too many file paths specified. exiting.\n", g_program_name);
 			}
 			paths[path_count] = argv[i];
 			path_count++;
