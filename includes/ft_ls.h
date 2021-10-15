@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2021/10/14 17:02:02 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/15 23:10:01 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@ struct		s_finfo
 	struct stat		status;
 	const char		*fullname;
 	const char		*name;
+	int				name_length;
 	char			*owner;
 	char			*group;
 };
@@ -55,4 +56,6 @@ struct		s_col_widths
 	int				group;
 };
 
+void	columnize(int *column_widths, int *ncol, struct f_info **items,
+		int item_count, int width_limit);
 #endif

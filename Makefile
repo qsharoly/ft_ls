@@ -8,6 +8,7 @@ CFLAGS +=-Wall -Wextra -Werror -O3
 
 #each module will add to this
 SRC := src/main.c\
+	   src/columnize.c\
 
 include libft/module
 include libftprintf/module

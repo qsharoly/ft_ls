@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/14 23:30:38 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/16 00:28:58 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -290,7 +290,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	struct s_finfo		*infos[MAX_BREADTH];
 	const char			*basename;
 	int					i;
-	int					tmp_res;
+	int					call_result;
 	size_t				tot_blocks;
 	struct s_col_widths	cols;
 	int					info_count;
@@ -328,13 +328,13 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		//follow dir links from argv (except in detailed mode)
 		if (depth == STARTING_DEPTH && !(options & LS_DETAILED))
 		{
-			tmp_res = stat(paths[i], &new_info->status);
+			call_result = stat(paths[i], &new_info->status);
 		}
 		else
 		{
-			tmp_res = lstat(paths[i], &new_info->status);
+			call_result = lstat(paths[i], &new_info->status);
 		}
-		if (tmp_res == -1)
+		if (call_result == -1)
 		{
 			ft_dprintf(STDERR, "%s: cannot access '%s': %s\n", g_program_name, paths[i], strerror(errno));
 			free(new_info);
@@ -344,6 +344,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		}
 		new_info->fullname = paths[i];
 		new_info->name = basename;
+		new_info->name_length = ft_strlen(new_info->name);
 		if (options & LS_DETAILED)
 		{
 			struct passwd	*tmp_passwd;
@@ -372,17 +373,18 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 			cols.size = ft_max(cols.size, n_digits(new_info->status.st_size));
 			cols.owner = ft_max(cols.owner, ft_strlen(new_info->owner));
 			cols.group = ft_max(cols.group, ft_strlen(new_info->group));
+			cols.name = ft_max(cols.name, ft_strlen(new_info->name));
 		}
-		cols.name = ft_max(cols.name, ft_strlen(new_info->name));
 		tot_blocks += new_info->status.st_blocks;
-		infos[info_count] = new_info;
 		if (!S_ISDIR(new_info->status.st_mode))
 			nondirs_remaining++;
+		infos[info_count] = new_info;
 		info_count++;
 		i++;
 	}
+
+	// sort
 	int	(*compare)(const void *left, const void *right);
-	// too clever:
 	int (*sort_style[4])(const void *left, const void *right) = {
 		alpha, alpha_reverse, mtime, mtime_reverse
 	};
@@ -392,21 +394,25 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	{
 		ft_printf("total %lu\n", tot_blocks / BLOCK_HACK);
 	}
-	int		ncol;
-	ncol = 0;
-	/*
-	struct winsize	winsize;
-	if (!(options & LS_SINGLE_COLUMN || options & LS_DETAILED))
+
+	// fit columnized output to terminal width
+	int		n_columns = 0;
+	int		*column_widths = NULL;
+	char	*separator = "  ";
+	int		seplen = 2;
+	if (!(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
 	{
-		// TODO(qsharoly): ls-like column widths
-		tmp_res = ioctl(0, TIOCGWINSZ, &winsize);
-		gate(!(tmp_res >= 0), "ft_ls: failed to get terminal dimensions", Fail_serious);
-		if (cols.name > 0 && winsize.ws_col > cols.name)
-			ncol = winsize.ws_col / cols.name;
+		struct winsize	winsize;
+		call_result = ioctl(0, TIOCGWINSZ, &winsize);
+		gate(!(call_result >= 0), "ft_ls: failed to get terminal dimensions", Fail_serious);
+		bool	skipdirs = (depth == STARTING_DEPTH);
+		if (skipdirs)
+			columnize(column_widths, &n_columns, infos, nondirs_remaining, seplen, winsize.ws_col, skipdirs);
+		else
+			columnize(column_widths, &n_columns, infos, info_count, seplen, winsize.ws_col, skipdirs);
 	}
-	*/
-	//flag to skip newline before first dir
-	bool	had_printed = false;
+
+	bool	had_printed = false; //flag to skip newline before first dir
 	//list files
 	i = 0;
 	while (i < info_count)
@@ -421,7 +427,7 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		{
 			print_detailed_info(infos[i], cols);
 		}
-		else if (options & LS_SINGLE_COLUMN || ncol == 1)
+		else if (options & LS_SINGLE_COLUMN || n_columns == 1)
 		{
 			ft_printf("%s\n", infos[i]->name);
 		}
@@ -432,16 +438,10 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 			else
 				ft_printf("%s  ", infos[i]->name);
 		}
-		/*
-		//TODO: add transposed column output
-
-		ft_printf("%-*s", cols.name, infos[i]->name);
-		if (0 == (i + 1) % ncol || i == info_count - 1)
-			ft_printf("\n");
-		*/
 		had_printed = true;
 		i++;
 	}
+	free(column_widths);
 	//step into directories
 	if (options & LS_RECURSIVE || depth == STARTING_DEPTH)
 	{
@@ -571,11 +571,6 @@ int		main(int argc, const char **argv)
 	}
 	list_paths(paths, path_count, STARTING_DEPTH, options);
 	if (g_had_minor_errors)
-	{
 		return (Fail_minor);
-	}
-	else
-	{
-		return (Success);
-	}
+	return (Success);
 }
