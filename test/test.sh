@@ -39,6 +39,7 @@ WORKPATH="tree"
 OUTPATH="../output"
 
 cd $WORKPATH
+rm -rf $OUTPATH
 mkdir -p $OUTPATH
 
 test "-1" "default path, single column"
