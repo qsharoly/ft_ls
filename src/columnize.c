@@ -1,7 +1,8 @@
+#include <stdlib.h>
 #include "ft_ls.h"
 
 enum {
-	Ncol_limit = 20;
+	Ncol_limit = 20
 };
 
 typedef struct	s_iw{
@@ -9,11 +10,18 @@ typedef struct	s_iw{
 	int	width;
 }				t_iw;
 
+static void	swap_pointers(t_iw **mem1_ptr, t_iw **mem2_ptr) {
+	t_iw	*tmp;
+	tmp = *mem1_ptr;
+	*mem1_ptr = *mem2_ptr;
+	*mem2_ptr = tmp;
+}
+
 static int	in_range(int test_me, int start, int stop) {
 	return (start <= test_me && test_me < stop);
 }
 
-static t_iw	max_iwidth(struct f_info **infos, int start, int stop) {
+static t_iw	max_iwidth(struct s_finfo **infos, int start, int stop) {
 	t_iw	max_iw;
 
 	max_iw.index = start;
@@ -31,21 +39,21 @@ static t_iw	max_iwidth(struct f_info **infos, int start, int stop) {
 	return max_iw;
 }
 
-void	columnize(int *column_widths, int *ncol, struct f_info **items,
+void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
 		int item_count, int width_limit) {
 	t_iw	mem1[Ncol_limit];
 	t_iw	mem2[Ncol_limit];
 	t_iw	*colwidths = mem1;
 	t_iw	*new_widths = mem2;
-	int		new_width_sum;
+	const int	separator_width = 2; //lets hardcode this! separator will be two spaces.
 
 	colwidths[0] = max_iwidth(items, 0, item_count);
 	*ncol = 1;
-	while (1 && *ncol < Ncol_limit)
+	while (1 && *ncol < Ncol_limit && *ncol < item_count)
 	{
 		int	lookat = 0;
 		int	new_at = 0;
-		int	new_height = info_count / (*ncol + 1);
+		int	new_height = item_count / (*ncol + 1);
 		int	new_width_sum = 0;
 		int	col = 0;
 		while (col < *ncol + 1)
@@ -88,24 +96,33 @@ void	columnize(int *column_widths, int *ncol, struct f_info **items,
 			new_width_sum += new_iw.width;
 			col++;
 		}
+		new_width_sum += *ncol * separator_width;
 		if (new_width_sum > width_limit)
+		//new_widths are over the limit.
+		//stop the loop and use current colwidths and ncol.
 		{
 			break;
 		}
-		*ncol += 1;
-		t_iw	*tmp = colwidths;
-		colwidths = new_widths;
-		new_widths = tmp;
-		if (new_width_sum == width_limit)
+		else if (new_width_sum == width_limit)
+		// new_widths fit exactly within the limit.
+		// stop the loop but increment ncol and use the new_widths for output.
 		{
+			*ncol += 1;
+			swap_pointers(&colwidths, &new_widths);
 			break;
+		}
+		else
+		// new_width_sum < width_limit. have not reached the limit yet.
+		{
+			*ncol += 1;
+			swap_pointers(&colwidths, &new_widths);
 		}
 	}
-	column_widths = malloc(*ncol * (*column_widths));
+	*column_widths = malloc(*ncol * sizeof(**column_widths));
 	int	i = 0;
 	while (i < *ncol)
 	{
-		column_widths[i] = colwidths[i].width;
+		(*column_widths)[i] = colwidths[i].width;
 		i++;
 	}
 }
