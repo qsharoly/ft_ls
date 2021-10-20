@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2021/10/17 20:59:08 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/20 12:25:18 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ enum e_exitcode
 struct		s_finfo
 {
 	struct stat		status;
-	const char		*fullname;
+	const char		*pathname;
 	const char		*name;
 	int				name_length;
 	char			*owner;
@@ -49,7 +49,7 @@ struct		s_finfo
 
 struct		s_col_widths
 {
-	int				lnk;
+	int				nlink;
 	int				size;
 	int				name;
 	int				owner;

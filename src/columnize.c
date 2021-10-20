@@ -39,6 +39,11 @@ static t_iw	max_iwidth(struct s_finfo **infos, int start, int stop) {
 	return max_iw;
 }
 
+static inline int my_min(int a, int b)
+{
+	return a < b ? a : b;
+}
+
 void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
 		int item_count, int separator_width, int width_limit) {
 	t_iw	mem1[Ncol_limit];
@@ -48,17 +53,17 @@ void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
 
 	colwidths[0] = max_iwidth(items, 0, item_count);
 	*ncol = 1;
-	while (1 && *ncol < Ncol_limit && *ncol < item_count)
+	while (*ncol < Ncol_limit && *ncol < item_count)
 	{
 		int	lookat = 0;
 		int	new_at = 0;
-		int	new_height = item_count / (*ncol + 1);
+		int	new_height = item_count / (*ncol + 1) + (item_count % (*ncol + 1) > 0);
 		int	new_width_sum = 0;
 		int	col = 0;
-		while (col < *ncol + 1)
+		while (col < *ncol + 1 && col * new_height < item_count)
 		{
 			int	start = col * new_height;
-			int	stop = (col + 1) * new_height;
+			int	stop = my_min((col + 1) * new_height, item_count);
 			t_iw	new_iw;
 			if (lookat >= *ncol - 1 || !in_range(colwidths[lookat].index, start, stop))
 			{
