@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2021/10/16 06:20:40 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/17 20:59:08 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,5 +57,5 @@ struct		s_col_widths
 };
 
 void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
-		int item_count, int width_limit);
+		int item_count, int separator_width, int width_limit);
 #endif

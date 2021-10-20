@@ -40,12 +40,11 @@ static t_iw	max_iwidth(struct s_finfo **infos, int start, int stop) {
 }
 
 void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
-		int item_count, int width_limit) {
+		int item_count, int separator_width, int width_limit) {
 	t_iw	mem1[Ncol_limit];
 	t_iw	mem2[Ncol_limit];
 	t_iw	*colwidths = mem1;
 	t_iw	*new_widths = mem2;
-	const int	separator_width = 2; //lets hardcode this! separator will be two spaces.
 
 	colwidths[0] = max_iwidth(items, 0, item_count);
 	*ncol = 1;

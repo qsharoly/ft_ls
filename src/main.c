@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/16 08:25:45 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/20 10:10:59 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -378,6 +378,7 @@ void	list_starting_paths(const char **paths, int path_count, int options)
 	// fit columnized output to terminal width
 	int		n_columns = 1;
 	int		*column_widths = NULL;
+	char	*sep = "++";
 	if (nondir_count > 0 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
 	{
 		struct winsize	winsize;
@@ -386,7 +387,8 @@ void	list_starting_paths(const char **paths, int path_count, int options)
 		{
 			panic(Fail_serious, "%s: failed to get terminal dimensions", g_program_name);
 		}
-		columnize(&column_widths, &n_columns, nondirs, nondir_count, winsize.ws_col);
+		int	termwidth = winsize.ws_col;
+		columnize(&column_widths, &n_columns, nondirs, nondir_count, ft_strlen(sep), termwidth);
 	}
 
 	//do we need to print a newline before the first dir announcement?
@@ -587,8 +589,10 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	}
 
 	// fit columnized output to terminal width
-	int		n_columns = 1;
-	int		*column_widths = NULL;
+	int	n_columns = 1;
+	int	*column_widths = NULL;
+	int	termwidth;
+	char	*separator = "||";
 	if (!(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
 	{
 		struct winsize	winsize;
@@ -597,7 +601,9 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		{
 			panic(Fail_serious, "%s: failed to get terminal dimensions", g_program_name);
 		}
-		columnize(&column_widths, &n_columns, infos, info_count, winsize.ws_col);
+		termwidth = winsize.ws_col;
+		//termwidth = 60;
+		columnize(&column_widths, &n_columns, infos, info_count, ft_strlen(separator), termwidth);
 	}
 
 	ft_printf("*** n_columns: %d, info_count: %d\n", n_columns, info_count);
@@ -610,8 +616,8 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		while (i < info_count)
 		{
 			print_detailed_info(infos[i], detail_widths);
-			i++;
 			had_printed = true;
+			i++;
 		}
 	}
 	else if (options & LS_SINGLE_COLUMN || n_columns == 1)
@@ -620,36 +626,42 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		while (i < info_count)
 		{
 			ft_printf("%s\n", infos[i]->name);
-			i++;
 			had_printed = true;
+			i++;
 		}
 	}
 	else
 	{
 		int height = info_count / n_columns + (info_count % n_columns > 0);
-		ft_printf("*** height: %d\n", height);
+		ft_printf("*** height: %d, termwidth: %d\n", height, termwidth);
+		for (int i = 0; i < n_columns; ++i) { ft_printf("%-*d||", column_widths[i], column_widths[i]); }
+		ft_printf("\n");
 		int row = 0;
+		int	total_printed = 0;
 		while (row < height)
 		{
-			int	start = row;
-			int	step = ft_max(height - 1, 1);
-			if (row > 0)
-				ft_printf("$");
-			int	idx = start;
-			int col = 0;
-			while (idx < info_count)
+			int	col = 0;
+			while (col < n_columns
+					&& total_printed < info_count
+					&& row + col * height < info_count)
 			{
-				ft_printf("i:%d,c:%d ", idx, col);
-				if (idx > start)
-					ft_printf("--");
-				ft_printf("%-*s", column_widths[col], infos[idx]->name); 
-				col++;
-				idx += step;
+				const char *item = infos[row + col * height]->name;
+				if (col + 1 < n_columns
+						&& total_printed + 1 < info_count
+						&& (row + (col + 1) * height) < info_count)
+				{
+					ft_printf("%-*s%s", column_widths[col], item, separator); 
+				}
+				else
+				{
+					ft_printf("%s\n", item);
+				}
 				had_printed = true;
+				col++;
+				total_printed++;
 			}
 			row++;
 		}
-		ft_printf("\n");
 	}
 	free(column_widths);
 	//step into directories
