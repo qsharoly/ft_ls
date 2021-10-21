@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/22 00:26:06 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/22 01:16:47 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -128,17 +128,21 @@ void	panic(enum e_exitcode status, const char *message_fmt, ...)
 char	*patcat(const char *path, const char *name)
 {
 	char	*str;
+	int		pathlen;
 
-	str = malloc(ft_strlen(path) + 1 + ft_strlen(name) + 1);
+	pathlen = ft_strlen(path);
+	str = malloc(pathlen + 1 + ft_strlen(name) + 1);
 	if (!str)
 	{
 		panic (Fail_serious, "%s: allocation failed", g_program_name);
 	}
 	ft_strcpy(str, path);
-	if (!ft_strequ(path, "/"))
+	while (pathlen > 0 && str[pathlen - 1] == '/')
 	{
-		ft_strcat(str, "/");
+		str[pathlen - 1] = '\0';
+		pathlen--;
 	}
+	ft_strcat(str, "/");
 	ft_strcat(str, name);
 	return (str);
 }
