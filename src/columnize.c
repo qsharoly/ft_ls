@@ -25,14 +25,14 @@ static t_iw	max_iwidth(struct s_finfo **infos, int start, int stop) {
 	t_iw	max_iw;
 
 	max_iw.index = start;
-	max_iw.width = infos[start]->name_length;
+	max_iw.width = infos[start]->namelen;
 	start++;
 	while (start < stop)
 	{
-		if (infos[start]->name_length > max_iw.width)
+		if (infos[start]->namelen > max_iw.width)
 		{
 			max_iw.index = start;
-			max_iw.width = infos[start]->name_length;
+			max_iw.width = infos[start]->namelen;
 		}
 		start++;
 	}

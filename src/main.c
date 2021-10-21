@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/20 13:09:28 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/22 00:26:06 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,8 @@
 #include "libft.h"
 #include "libftprintf.h"
 #include <stdlib.h> //malloc(), free(), exit()
-#include <sys/stat.h> //struct stat, stat()
+#include <fcntl.h> // AT_SYMLINK_NOFOLLOW
+#include <sys/stat.h> //struct stat, fstatat()
 #include <sys/ioctl.h> //struct winsize, ioctl()
 #include <dirent.h> //readdir(), opendir(), closedir()
 #include <string.h> //strerror()
@@ -29,9 +30,6 @@
 static bool	g_had_minor_errors = false;
 const char	*g_program_name = "ft_ls"; //initialize to default name
 int	(*g_compare)(const void *left, const void *right);
-
-static int	scan_dir(char **sub_paths, const char *path, int depth, unsigned options);
-void	list_paths(const char **paths, int path_count, int depth, int options);
 
 static void	print_help()
 {
@@ -72,7 +70,7 @@ static void	parse_option(const char *str, unsigned *options)
 	while ((c = str[j]))
 	{
 		if (c == 'a')
-			*options |= LS_LIST_ALL;
+			*options |= LS_SHOW_ALL;
 		else if (c == 'l')
 			*options |= LS_DETAILED;
 		else if (c == 'r')
@@ -80,7 +78,7 @@ static void	parse_option(const char *str, unsigned *options)
 		else if (c == 'R')
 			*options |= LS_RECURSIVE;
 		else if (c == 't')
-			*options |= LS_SORT_BY_TIME;
+			*options |= LS_SORT_MTIME;
 		else if (c == 'x')
 			*options |= LS_TRANSPOSE_COLUMNS;
 		else if (c == '1')
@@ -190,7 +188,7 @@ int		mtime(const void *l, const void *r)
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	diff = right->status.st_mtime - left->status.st_mtime;
+	diff = right->status->st_mtime - left->status->st_mtime;
 	if (diff == 0)
 	{
 		return (alpha(l, r));
@@ -206,7 +204,7 @@ int		mtime_reverse(const void *l, const void *r)
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	diff = left->status.st_mtime - right->status.st_mtime;
+	diff = left->status->st_mtime - right->status->st_mtime;
 	if (diff == 0)
 	{
 		return (alpha_reverse(l, r));
@@ -232,7 +230,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths w)
 	mode_t	mode;
 	char	perms[11];
 
-	mode = f->status.st_mode;
+	mode = f->status->st_mode;
 	perms[0] = '?';
 	if (S_ISREG(mode))
 		perms[0] = '-';
@@ -258,16 +256,16 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths w)
 	perms[8] = mode & S_IWOTH ? 'w' : '-';
 	perms[9] = mode & S_IXOTH ? 'x' : '-';
 	perms[10] = '\0';
-	size_t nlink = f->status.st_nlink;
-	size_t fsize = f->status.st_size;
-	char *mtime = ctime(&(f->status.st_mtime));
+	size_t nlink = f->status->st_nlink;
+	size_t fsize = f->status->st_size;
+	char *mtime = ctime(&(f->status->st_mtime));
 	char *mmm_dd = ft_strchr(mtime, ' ') + 1;
 	char *hh_mm = &mtime[11];
 	char *_yyyy = &mtime[19];
 	char *hm_or_yy;
 	time_t now = time(NULL);
 #define SIX_MONTHS_AS_SECONDS 15778476
-	if (now < f->status.st_mtime || now - f->status.st_mtime > SIX_MONTHS_AS_SECONDS)
+	if (now < f->status->st_mtime || now - f->status->st_mtime > SIX_MONTHS_AS_SECONDS)
 	{
 		hm_or_yy = _yyyy;
 	}
@@ -278,10 +276,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths w)
 	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %s", perms, w.nlink - 1, nlink, w.owner, f->owner, w.group, f->group, w.size - 1, fsize, mmm_dd, hm_or_yy, f->name);
 	if (S_ISLNK(mode))
 	{
-#define LINKBUF 80
-		char linkbuf[LINKBUF];
-		size_t linklen = readlink(f->pathname, linkbuf, LINKBUF);
-		ft_printf(" -> %.*s\n", linklen, linkbuf);
+		ft_printf(" -> %.*s\n", f->linklen, f->linkbuf);
 	}
 	else
 		ft_printf("\n");
@@ -290,10 +285,10 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths w)
 static int	get_termwidth(void)
 {
 	struct winsize	winsize;
-	int				call_result;
+	int				ok;
 
-	call_result = ioctl(0, TIOCGWINSZ, &winsize);
-	if (call_result	< 0)
+	ok = ioctl(0, TIOCGWINSZ, &winsize);
+	if (ok	< 0)
 	{
 		panic(Fail_serious, "%s: failed to get terminal dimensions", g_program_name);
 	}
@@ -332,7 +327,7 @@ static void add_owner_and_group(struct s_finfo *info)
 	struct passwd	*tmp_passwd;
 	struct group	*tmp_group;
 
-	tmp_passwd = getpwuid(info->status.st_uid);
+	tmp_passwd = getpwuid(info->status->st_uid);
 	if (!tmp_passwd)
 	{
 		panic(Fail_serious, "%s: unable to get owner's name", g_program_name);
@@ -342,7 +337,7 @@ static void add_owner_and_group(struct s_finfo *info)
 	{
 		panic(Fail_serious, "%s: allocation failed", g_program_name);
 	}
-	tmp_group = getgrgid(info->status.st_gid);
+	tmp_group = getgrgid(info->status->st_gid);
 	if (!tmp_group)
 	{
 		panic(Fail_serious, "%s: unable to get groupname", g_program_name);
@@ -356,20 +351,20 @@ static void add_owner_and_group(struct s_finfo *info)
 
 static void update_detail_column_widths(struct s_col_widths *width_of, struct s_finfo *info)
 {
-	width_of->nlink = ft_max(width_of->nlink, n_digits(info->status.st_nlink));
-	width_of->size = ft_max(width_of->size, n_digits(info->status.st_size));
+	width_of->nlink = ft_max(width_of->nlink, n_digits(info->status->st_nlink));
+	width_of->size = ft_max(width_of->size, n_digits(info->status->st_size));
 	width_of->owner = ft_max(width_of->owner, ft_strlen(info->owner));
 	width_of->group = ft_max(width_of->group, ft_strlen(info->group));
 	width_of->name = ft_max(width_of->name, ft_strlen(info->name));
 }
 
-void	list_starting_paths(const char **paths, int path_count, int options)
+void	list_initial_paths(const char **paths, int path_count, int options)
 {
 	struct s_finfo		*nondirs[MAX_BREADTH];
 	struct s_finfo		*dirs[MAX_BREADTH];
 	int					nondir_count;
 	int					dir_count;
-	int					call_result;
+	int					ok;
 	size_t				tot_blocks;
 	struct s_col_widths	detail_widths;
 	int					i;
@@ -393,12 +388,13 @@ void	list_starting_paths(const char **paths, int path_count, int options)
 		{
 			panic(Fail_serious, "%s: allocation failed", g_program_name);
 		}
+		new_info->status = malloc(sizeof(struct stat));
 		//in detailed mode print info about links themselves
 		if (options & LS_DETAILED)
-			call_result = lstat(paths[i], &new_info->status);
+			ok = lstat(paths[i], new_info->status);
 		else
-			call_result = stat(paths[i], &new_info->status);
-		if (call_result == -1)
+			ok = stat(paths[i], new_info->status);
+		if (ok == -1)
 		{
 			ft_dprintf(STDERR, "%s: cannot access '%s': %s\n", g_program_name, paths[i], strerror(errno));
 			free(new_info);
@@ -406,19 +402,19 @@ void	list_starting_paths(const char **paths, int path_count, int options)
 			g_had_minor_errors = true;
 			continue;
 		}
-		new_info->pathname = paths[i];
-		new_info->name = paths[i];
-		new_info->name_length = ft_strlen(new_info->name);
-		if (S_ISDIR(new_info->status.st_mode))
+		new_info->name = (char *)paths[i];
+		new_info->namelen = ft_strlen(new_info->name);
+		if (options & LS_DETAILED)
+		{
+			new_info->linklen = readlink(new_info->name, new_info->linkbuf, 256);
+			add_owner_and_group(new_info);
+			update_detail_column_widths(&detail_widths, new_info);
+		}
+		if (S_ISDIR(new_info->status->st_mode))
 		{
 			dirs[dir_count++] = new_info;
 			i++;
 			continue;
-		}
-		if (options & LS_DETAILED)
-		{
-			add_owner_and_group(new_info);
-			update_detail_column_widths(&detail_widths, new_info);
 		}
 		nondirs[nondir_count++] = new_info;
 		i++;
@@ -472,15 +468,8 @@ void	list_starting_paths(const char **paths, int path_count, int options)
 	while (i < dir_count)
 	{
 		// don't go into links
-		if (S_ISLNK(dirs[i]->status.st_mode))
+		if (S_ISLNK(dirs[i]->status->st_mode))
 		{
-			i++;
-			continue;
-		}
-		char	*sub_paths[MAX_BREADTH];
-		int		sub_count;
-		sub_count = scan_dir(sub_paths, dirs[i]->pathname, STARTING_DEPTH + 1, options);
-		if (sub_count < 0) {
 			i++;
 			continue;
 		}
@@ -488,22 +477,17 @@ void	list_starting_paths(const char **paths, int path_count, int options)
 		{
 			if (had_printed)
 				ft_printf("\n");
-			ft_printf("%s:\n", dirs[i]->pathname);
+			ft_printf("%s:\n", dirs[i]->name);
 			had_printed = true;
 		}
-		list_paths((const char **)sub_paths, sub_count, STARTING_DEPTH + 1, options);
-		int j = 0;
-		while (j < sub_count)
-		{
-			free(sub_paths[j]);
-			j++;
-		}
+		list_directory(dirs[i]->name, STARTING_DEPTH + 1, options);
 		i++;
 	}
 
 	i = 0;
 	while (i < nondir_count)
 	{
+		free(nondirs[i]->status);
 		free(nondirs[i]->owner);
 		free(nondirs[i]->group);
 		free(nondirs[i]);
@@ -512,6 +496,7 @@ void	list_starting_paths(const char **paths, int path_count, int options)
 	i = 0;
 	while (i < dir_count)
 	{
+		free(dirs[i]->status);
 		free(dirs[i]->owner);
 		free(dirs[i]->group);
 		free(dirs[i]);
@@ -519,66 +504,103 @@ void	list_starting_paths(const char **paths, int path_count, int options)
 	}
 }
 
-void	list_paths(const char **paths, int path_count, int depth, int options)
+int	scan_directory(struct s_finfo **infos, const char *path, int depth, unsigned options)
+{
+	DIR				*dir;
+	struct dirent	*entry;
+	int				ent_count;
+	int				ok;
+
+	if (depth >= MAX_DEPTH)
+	{
+		panic(Fail_serious, "%s: can't list '%s': reached max directory depth.\n", g_program_name, path);
+	}
+	dir = opendir(path);
+	if (!dir)
+	{
+		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s\n", g_program_name, path, strerror(errno));
+		g_had_minor_errors = true;
+		return -1;
+	}
+	ent_count = 0;
+	while ((entry = readdir(dir)))
+	{
+		if (ent_count >= MAX_BREADTH)
+		{
+			panic(Fail_serious, "%s: can't list '%s': reached max number of entries per directory.\n", g_program_name, path);
+		}
+		//skip invisible files
+		if (entry->d_name[0] == '.' && !(options & LS_SHOW_ALL))
+		{
+			continue;
+		}
+		struct s_finfo	*info = ft_calloc(1, sizeof(*info));
+		if (!info)
+		{
+			panic(Fail_serious, "%s: allocation failed: ", g_program_name);
+		}
+		if (options & LS_DETAILED || options & LS_SORT_MTIME)
+		{
+			struct stat	*status = malloc(sizeof(*status));
+			if (!status)
+			{
+				panic(Fail_serious, "%s: allocation failed: ", g_program_name);
+			}
+			ok = fstatat(dirfd(dir), entry->d_name, status, AT_SYMLINK_NOFOLLOW);
+			if (ok == -1)
+			{
+				ft_dprintf(STDERR, "%s: cannot access '%s/%s': %s\n", g_program_name, path, entry->d_name, strerror(errno));
+				free(status);
+				free(info);
+				g_had_minor_errors = true;
+				continue;
+			}
+			info->status = status;
+		}
+		if (options & LS_DETAILED)
+		{
+			info->linklen = readlinkat(dirfd(dir), entry->d_name, info->linkbuf, 256);
+		}
+		info->name = ft_strdup(entry->d_name);
+		info->namelen = ft_strlen(entry->d_name);
+		info->is_dir = (entry->d_type == DT_DIR);
+		infos[ent_count++] = info;
+	}
+	closedir(dir);
+	return ent_count;
+}
+
+void	list_directory(const char *dir_name, int depth, int options)
 {
 	struct s_finfo		*infos[MAX_BREADTH];
 	int					info_count;
-	const char			*basename;
-	int					call_result;
 	size_t				tot_blocks;
 	struct s_col_widths	detail_widths;
 	int					i;
 
-	tot_blocks = 0;
-	detail_widths.nlink = 0;
-	detail_widths.size = 0;
-	detail_widths.name = 0;
-	detail_widths.owner = 0;
-	detail_widths.group = 0;
-	info_count = 0;
+	info_count = scan_directory(infos, dir_name, depth, options);
+	if (info_count < 0) {
+		return;
+	}
 
-	// read file information
-	i = 0;
-	while (i < path_count)
+	// get additional details
+	if (options & LS_DETAILED)
 	{
-		basename = ft_strrchr(paths[i], '/');
-		if (basename) //if found '/', point basename at the next char
-			basename += 1;
-		else
-			basename = paths[i];
-		//skip invisible files
-		if (basename[0] == '.' && !(options & LS_LIST_ALL))
+		tot_blocks = 0;
+		detail_widths.nlink = 0;
+		detail_widths.size = 0;
+		detail_widths.name = 0;
+		detail_widths.owner = 0;
+		detail_widths.group = 0;
+
+		i = 0;
+		while (i < info_count)
 		{
+			add_owner_and_group(infos[i]);
+			update_detail_column_widths(&detail_widths, infos[i]);
+			tot_blocks += infos[i]->status->st_blocks;
 			i++;
-			continue;
 		}
-		struct s_finfo	*new_info;
-		new_info = (struct s_finfo *)ft_calloc(1, sizeof(struct s_finfo));
-		if (!new_info)
-		{
-			panic(Fail_serious, "%s: allocation failed", g_program_name);
-		}
-		call_result = lstat(paths[i], &new_info->status);
-		if (call_result == -1)
-		{
-			ft_dprintf(STDERR, "%s: cannot access '%s': %s\n", g_program_name, paths[i], strerror(errno));
-			free(new_info);
-			i++;
-			g_had_minor_errors = true;
-			continue;
-		}
-		new_info->pathname = paths[i];
-		new_info->name = basename;
-		new_info->name_length = ft_strlen(new_info->name);
-		if (options & LS_DETAILED)
-		{
-			add_owner_and_group(new_info);
-			update_detail_column_widths(&detail_widths, new_info);
-		}
-		tot_blocks += new_info->status.st_blocks;
-		infos[info_count] = new_info;
-		info_count++;
-		i++;
 	}
 
 	// sort
@@ -631,29 +653,17 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 		i = 0;
 		while (i < info_count)
 		{
-			if (S_ISDIR(infos[i]->status.st_mode)
+			if (infos[i]->is_dir
 					&& !ft_strequ(infos[i]->name, ".")
-					&& !ft_strequ(infos[i]->name, "..")
-					&& !S_ISLNK(infos[i]->status.st_mode))
+					&& !ft_strequ(infos[i]->name, ".."))
 			{
-				char	*sub_paths[MAX_BREADTH];
-				int		sub_count;
-				sub_count = scan_dir(sub_paths, infos[i]->pathname, depth + 1, options);
-				if (sub_count < 0) {
-					i++;
-					continue;
-				}
+				char *sub_dir_path = patcat(dir_name, infos[i]->name);
 				if (had_printed)
 					ft_printf("\n");
-				ft_printf("%s:\n", infos[i]->pathname);
+				ft_printf("%s:\n", sub_dir_path);
 				had_printed = true;
-				list_paths((const char **)sub_paths, sub_count, depth + 1, options);
-				int j = 0;
-				while (j < sub_count)
-				{
-					free(sub_paths[j]);
-					j++;
-				}
+				list_directory(sub_dir_path, depth + 1, options);
+				free(sub_dir_path);
 			}
 			i++;
 		}
@@ -662,43 +672,13 @@ void	list_paths(const char **paths, int path_count, int depth, int options)
 	i = 0;
 	while (i < info_count)
 	{
+		free(infos[i]->name);
+		free(infos[i]->status);
 		free(infos[i]->owner);
 		free(infos[i]->group);
 		free(infos[i]);
 		i++;
 	}
-}
-
-static int	scan_dir(char **sub_paths, const char *path, int depth, unsigned options)
-{
-	DIR				*dir;
-	struct dirent	*entry;
-	int				sub_count;
-
-	(void)options;
-	if (depth >= MAX_DEPTH)
-	{
-		panic(Fail_serious, "%s: can't list '%s': reached max directory depth.\n", g_program_name, path);
-	}
-	dir = opendir(path);
-	if (!dir)
-	{
-		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s\n", g_program_name, path, strerror(errno));
-		g_had_minor_errors = true;
-		return -1;
-	}
-	sub_count = 0;
-	while ((entry = readdir(dir)))
-	{
-		if (sub_count >= MAX_BREADTH)
-		{
-			panic(Fail_serious, "%s: can't list '%s': reached max number of entries per directory.\n", g_program_name, path);
-		}
-		sub_paths[sub_count] = patcat(path, entry->d_name);
-		sub_count++;
-	}
-	closedir(dir);
-	return sub_count;
 }
 
 int		main(int argc, const char **argv)
@@ -710,11 +690,11 @@ int		main(int argc, const char **argv)
 
 	g_program_name = argv[0];
 	options = parse_options(argc, argv);
-	// setup sorting
+	// choose comparison function for sorting
 	int (*sort_style[4])(const void *left, const void *right) = {
 		alpha, alpha_reverse, mtime, mtime_reverse
 	};
-	g_compare = sort_style[!!(options & LS_SORT_REVERSE) + 2 * !!(options & LS_SORT_BY_TIME)];
+	g_compare = sort_style[!!(options & LS_SORT_REVERSE) + 2 * !!(options & LS_SORT_MTIME)];
 	path_count = 0;
 	if (argc > 1)
 	{
@@ -740,7 +720,7 @@ int		main(int argc, const char **argv)
 		path_count = 1;
 		paths[0] = ".";
 	}
-	list_starting_paths(paths, path_count, options);
+	list_initial_paths(paths, path_count, options);
 	if (g_had_minor_errors)
 		return (Fail_minor);
 	return (Success);
