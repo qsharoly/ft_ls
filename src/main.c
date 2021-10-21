@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/22 01:16:47 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/22 01:25:29 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,8 +142,8 @@ char	*patcat(const char *path, const char *name)
 		str[pathlen - 1] = '\0';
 		pathlen--;
 	}
-	ft_strcat(str, "/");
-	ft_strcat(str, name);
+	str[pathlen++] = '/';
+	ft_strcpy(str + pathlen, name);
 	return (str);
 }
 
