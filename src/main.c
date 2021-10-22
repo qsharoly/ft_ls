@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/22 01:25:29 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/22 14:23:53 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,6 @@
 #include <dirent.h> //readdir(), opendir(), closedir()
 #include <string.h> //strerror()
 #include <errno.h> //strerror()
-#include <stdio.h> //perror()
 #include <time.h> //ctime()
 #include <pwd.h> //getpwuid()
 #include <grp.h> //getgrgid()
@@ -93,25 +92,6 @@ static void	parse_option(const char *str, unsigned *options)
 	}
 }
 
-static unsigned parse_options(int argc, const char **argv)
-{
-	unsigned	options;
-	int			i;
-
-	options = 0;
-	i = 1;
-	while (i < argc)
-	{
-		if (argv[i][0] == '-')
-		{
-			parse_option(&argv[i][1], &options);
-		}
-		i++;
-	}
-	return (options);
-}
-
-
 __attribute__((__format__(__printf__, 2, 3)))
 void	panic(enum e_exitcode status, const char *message_fmt, ...)
 {
@@ -120,7 +100,6 @@ void	panic(enum e_exitcode status, const char *message_fmt, ...)
 	va_start(ap, message_fmt);
 	ft_vdprintf(STDERR, message_fmt, ap);
 	va_end(ap);
-	perror("");
 	exit(status);
 }
 
@@ -134,7 +113,7 @@ char	*patcat(const char *path, const char *name)
 	str = malloc(pathlen + 1 + ft_strlen(name) + 1);
 	if (!str)
 	{
-		panic (Fail_serious, "%s: allocation failed", g_program_name);
+		panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
 	}
 	ft_strcpy(str, path);
 	while (pathlen > 0 && str[pathlen - 1] == '/')
@@ -294,7 +273,7 @@ static int	get_termwidth(void)
 	ok = ioctl(0, TIOCGWINSZ, &winsize);
 	if (ok	< 0)
 	{
-		panic(Fail_serious, "%s: failed to get terminal dimensions", g_program_name);
+		panic(Fail_serious, "%s: failed to get terminal dimensions: %s\n", g_program_name, strerror(errno));
 	}
 	return winsize.ws_col;
 }
@@ -334,22 +313,22 @@ static void add_owner_and_group(struct s_finfo *info)
 	tmp_passwd = getpwuid(info->status->st_uid);
 	if (!tmp_passwd)
 	{
-		panic(Fail_serious, "%s: unable to get owner's name", g_program_name);
+		panic(Fail_serious, "%s: unable to get owner's name: %s\n", g_program_name, strerror(errno));
 	}
 	info->owner = ft_strdup(tmp_passwd->pw_name);
 	if (!info->owner)
 	{
-		panic(Fail_serious, "%s: allocation failed", g_program_name);
+		panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
 	}
 	tmp_group = getgrgid(info->status->st_gid);
 	if (!tmp_group)
 	{
-		panic(Fail_serious, "%s: unable to get groupname", g_program_name);
+		panic(Fail_serious, "%s: unable to get groupname: %s\n", g_program_name, strerror(errno));
 	}
 	info->group = ft_strdup(tmp_group->gr_name);
 	if (!info->group)
 	{
-		panic(Fail_serious, "%s: allocation failed", g_program_name);
+		panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
 	}
 }
 
@@ -390,7 +369,7 @@ void	list_initial_paths(const char **paths, int path_count, int options)
 		new_info = ft_calloc(1, sizeof(struct s_finfo));
 		if (!new_info)
 		{
-			panic(Fail_serious, "%s: allocation failed", g_program_name);
+			panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
 		}
 		new_info->status = malloc(sizeof(struct stat));
 		//in detailed mode print info about links themselves
@@ -541,14 +520,14 @@ int	scan_directory(struct s_finfo **infos, const char *path, int depth, unsigned
 		struct s_finfo	*info = ft_calloc(1, sizeof(*info));
 		if (!info)
 		{
-			panic(Fail_serious, "%s: allocation failed: ", g_program_name);
+			panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
 		}
 		if (options & LS_DETAILED || options & LS_SORT_MTIME)
 		{
 			struct stat	*status = malloc(sizeof(*status));
 			if (!status)
 			{
-				panic(Fail_serious, "%s: allocation failed: ", g_program_name);
+				panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
 			}
 			ok = fstatat(dirfd(dir), entry->d_name, status, AT_SYMLINK_NOFOLLOW);
 			if (ok == -1)
@@ -614,11 +593,22 @@ void	list_directory(const char *dir_name, int depth, int options)
 	int		n_columns = 1;
 	int		*column_widths = NULL;
 	char	*separator = "  ";
+#ifdef DEBUGLOG
+	separator = "||";
+#endif
 	if (info_count > 1 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
 	{
 		int	termwidth = get_termwidth();
 		columnize(&column_widths, &n_columns, infos, info_count, ft_strlen(separator), termwidth);
 	}
+#ifdef DEBUGLOG
+	ft_printf("n_columns: %d\n", n_columns);
+	for (int a = 0; a < n_columns; ++a) {
+		if (column_widths)
+			ft_printf("%*d%s", column_widths[a], column_widths[a], separator);
+	}
+	ft_printf("\n");
+#endif
 
 	// do we need to print a newline before first dir
 	bool	had_printed = false;
@@ -691,14 +681,12 @@ int		main(int argc, const char **argv)
 	int			i;
 	const char	*paths[MAX_BREADTH];
 	int			path_count;
-
-	g_program_name = argv[0];
-	options = parse_options(argc, argv);
-	// choose comparison function for sorting
-	int (*sort_style[4])(const void *left, const void *right) = {
+	int 		(*sort_style[4])(const void *left, const void *right) = {
 		alpha, alpha_reverse, mtime, mtime_reverse
 	};
-	g_compare = sort_style[!!(options & LS_SORT_REVERSE) + 2 * !!(options & LS_SORT_MTIME)];
+
+	g_program_name = argv[0];
+	options = 0;
 	path_count = 0;
 	if (argc > 1)
 	{
@@ -707,6 +695,7 @@ int		main(int argc, const char **argv)
 		{
 			if (argv[i][0] == '-')
 			{
+				parse_option(&argv[i][1], &options);
 				i++;
 				continue;
 			}
@@ -724,6 +713,8 @@ int		main(int argc, const char **argv)
 		path_count = 1;
 		paths[0] = ".";
 	}
+	// choose comparison function for sorting
+	g_compare = sort_style[!!(options & LS_SORT_REVERSE) + 2 * !!(options & LS_SORT_MTIME)];
 	list_initial_paths(paths, path_count, options);
 	if (g_had_minor_errors)
 		return (Fail_minor);
