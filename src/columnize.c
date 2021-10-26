@@ -98,7 +98,7 @@ void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
 	printf("initial:\n");
 	dumpling(items, item_count, colwidths, *ncol);
 #endif
-	bool had_skipped_over = false;
+	int skipped_over = 0;
 	while (*ncol < Ncol_limit && *ncol < item_count)
 	{
 		int	lookat = 0;
@@ -114,7 +114,7 @@ void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
 #ifdef DEBUGLOG
 			printf("not enough elements for groups of %d or less. skipping over.\n", new_height);
 #endif
-			had_skipped_over = true;
+			skipped_over += 1;
 			*ncol += 1;
 			continue;
 		}
@@ -201,8 +201,7 @@ void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
 		//new_widths are over the limit.
 		//stop the loop and use current colwidths and ncol.
 		{
-			if (had_skipped_over)
-				*ncol -= 1;
+			*ncol -= skipped_over;
 #ifdef DEBUGLOG
 			printf("bad length sum. fallback.\n");
 #endif
