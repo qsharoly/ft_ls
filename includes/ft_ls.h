@@ -6,13 +6,14 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2021/10/21 23:17:35 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/26 20:07:05 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef FT_LS_H
 # define FT_LS_H
 
+#include <stddef.h>
 #include <sys/stat.h>
 #include <stdbool.h>
 
@@ -50,19 +51,24 @@ struct	s_finfo
 	bool		is_dir;
 };
 
-struct	s_col_widths
+struct s_width {
+	int	nlink;
+	int	size;
+	int	name;
+	int	owner;
+	int	group;
+};
+
+struct	s_meta
 {
-	int				nlink;
-	int				size;
-	int				name;
-	int				owner;
-	int				group;
+	size_t			total_blocks;
+	struct s_width	w;
 };
 
 void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
 			int item_count, int separator_width, int width_limit);
-int	scan_directory(struct s_finfo **infos, const char *path, int depth,
-			unsigned options);
+int		scan_directory(struct s_finfo **infos, const char *path,
+			struct s_meta *detail_meta, int depth, unsigned options);
 void	list_directory(const char *pathname, int depth, int options);
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/22 14:23:53 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/26 21:16:56 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,7 +55,7 @@ static void	print_help()
 	);
 }
 
-static void	parse_option(const char *str, unsigned *options)
+static void	parse_option(const char *str, int *options)
 {
 	int		j;
 	char	c;
@@ -208,7 +208,7 @@ size_t	n_digits(size_t val)
 	return (n);
 }
 
-static void	print_detailed_info(struct s_finfo	*f, struct s_col_widths w)
+static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 {
 	mode_t	mode;
 	char	perms[11];
@@ -278,33 +278,6 @@ static int	get_termwidth(void)
 	return winsize.ws_col;
 }
 
-static bool	print_columnized(struct s_finfo **items, int item_count,
-		const int *column_widths, int n_columns, const char *separator)
-{
-	bool had_printed = false;
-	int height = item_count / n_columns + (item_count % n_columns > 0);
-	int row = 0;
-	while (row < height)
-	{
-		int	start = row;
-		int	step = height;
-		int	idx = start;
-		int col = 0;
-		while (idx < item_count)
-		{
-			if (idx + step < item_count)
-				ft_printf("%-*s%s", column_widths[col], items[idx]->name, separator); 
-			else
-				ft_printf("%s\n", items[idx]->name);
-			col++;
-			idx += step;
-			had_printed = true;
-		}
-		row++;
-	}
-	return had_printed;
-}
-
 static void add_owner_and_group(struct s_finfo *info)
 {
 	struct passwd	*tmp_passwd;
@@ -332,66 +305,163 @@ static void add_owner_and_group(struct s_finfo *info)
 	}
 }
 
-static void update_detail_column_widths(struct s_col_widths *width_of, struct s_finfo *info)
+static void update_detail_meta(struct s_meta *meta, struct s_finfo *info)
 {
-	width_of->nlink = ft_max(width_of->nlink, n_digits(info->status->st_nlink));
-	width_of->size = ft_max(width_of->size, n_digits(info->status->st_size));
-	width_of->owner = ft_max(width_of->owner, ft_strlen(info->owner));
-	width_of->group = ft_max(width_of->group, ft_strlen(info->group));
-	width_of->name = ft_max(width_of->name, ft_strlen(info->name));
+	meta->total_blocks += info->status->st_blocks;
+	meta->w.nlink = ft_max(meta->w.nlink, n_digits(info->status->st_nlink));
+	meta->w.size = ft_max(meta->w.size, n_digits(info->status->st_size));
+	meta->w.owner = ft_max(meta->w.owner, ft_strlen(info->owner));
+	meta->w.group = ft_max(meta->w.group, ft_strlen(info->group));
+	meta->w.name = ft_max(meta->w.name, ft_strlen(info->name));
+}
+
+struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
+				int dirfd, const char *dir_path, int options, int statflags)
+{
+	struct s_finfo	*info;
+	int ok;
+
+	info = ft_calloc(1, sizeof(*info));
+	if (!info)
+	{
+		panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
+	}
+	info->name = ft_strdup(filename);
+	info->namelen = ft_strlen(filename);
+	//dir_path == NULL means we are called from list_initial_files
+	if (options & LS_DETAILED || options & LS_SORT_MTIME || dir_path == NULL)
+	{
+		struct stat	*status = malloc(sizeof(*status));
+		if (!status)
+		{
+			panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
+		}
+		ok = fstatat(dirfd, filename, status, statflags);
+		if (ok == -1)
+		{
+			ft_dprintf(STDERR, "%s: cannot access '%s/%s': %s\n", g_program_name, dir_path, filename, strerror(errno));
+			free(status);
+			free(info);
+			g_had_minor_errors = true;
+			return NULL;
+		}
+		info->status = status;
+	}
+	if (options & LS_DETAILED)
+	{
+		info->linklen = readlinkat(dirfd, filename, info->linkbuf, 256);
+		add_owner_and_group(info);
+		update_detail_meta(detail_meta, info);
+	}
+	return info;
+}
+
+void	destroy_infos(struct s_finfo **infos, int info_count)
+{
+	int i = 0;
+	while (i < info_count)
+	{
+		free(infos[i]->name);
+		free(infos[i]->status);
+		free(infos[i]->owner);
+		free(infos[i]->group);
+		free(infos[i]);
+		i++;
+	}
+}
+
+bool	print_informations(struct s_finfo **items, int item_count, int options, struct s_width detail_meta_w)
+{
+	// fit columnized output to terminal width
+	int		n_columns = 1;
+	int		*column_widths = NULL;
+	char	*sep = "  ";
+
+	if (item_count > 1 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
+	{
+		int	termwidth = get_termwidth();
+		columnize(&column_widths, &n_columns, items, item_count, ft_strlen(sep), termwidth);
+	}
+
+	// need to print a newline before the first dir announcement?
+	bool	had_printed = false;
+
+	// do printing
+	if (options & LS_DETAILED)
+	{
+		int i = 0;
+		while (i < item_count)
+		{
+			print_detailed_info(items[i], detail_meta_w);
+			i++;
+			had_printed = true;
+		}
+	}
+	else if (options & LS_SINGLE_COLUMN || n_columns == 1)
+	{
+		int i = 0;
+		while (i < item_count)
+		{
+			ft_printf("%s\n", items[i]->name);
+			i++;
+			had_printed = true;
+		}
+	}
+	else
+	{
+		int height = item_count / n_columns + (item_count % n_columns > 0);
+		int row = 0;
+		while (row < height)
+		{
+			int	start = row;
+			int	step = height;
+			int	idx = start;
+			int col = 0;
+			while (idx < item_count)
+			{
+				if (idx + step < item_count)
+					ft_printf("%-*s%s", column_widths[col], items[idx]->name, sep); 
+				else
+					ft_printf("%s\n", items[idx]->name);
+				col++;
+				idx += step;
+				had_printed = true;
+			}
+			row++;
+		}
+	}
+	free(column_widths);
+
+	return had_printed;
 }
 
 void	list_initial_paths(const char **paths, int path_count, int options)
 {
-	struct s_finfo		*nondirs[MAX_BREADTH];
-	struct s_finfo		*dirs[MAX_BREADTH];
-	int					nondir_count;
-	int					dir_count;
-	int					ok;
-	size_t				tot_blocks;
-	struct s_col_widths	detail_widths;
-	int					i;
+	struct s_finfo	*nondirs[MAX_BREADTH];
+	struct s_finfo	*dirs[MAX_BREADTH];
+	int				nondir_count;
+	int				dir_count;
+	struct s_meta	detail_meta = {0};
+	int				i;
 
-	tot_blocks = 0;
 	nondir_count = 0;
 	dir_count = 0;
-	detail_widths.nlink = 0;
-	detail_widths.size = 0;
-	detail_widths.name = 0;
-	detail_widths.owner = 0;
-	detail_widths.group = 0;
 
 	// read file information
 	i = 0;
 	while (i < path_count)
 	{
 		struct s_finfo	*new_info;
-		new_info = ft_calloc(1, sizeof(struct s_finfo));
-		if (!new_info)
-		{
-			panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
-		}
-		new_info->status = malloc(sizeof(struct stat));
 		//in detailed mode print info about links themselves
 		if (options & LS_DETAILED)
-			ok = lstat(paths[i], new_info->status);
+			new_info = get_file_info(paths[i], &detail_meta, AT_FDCWD, NULL, options, AT_SYMLINK_NOFOLLOW);
 		else
-			ok = stat(paths[i], new_info->status);
-		if (ok == -1)
+			new_info = get_file_info(paths[i], &detail_meta, AT_FDCWD, NULL, options, 0);
+		if (!new_info)
 		{
-			ft_dprintf(STDERR, "%s: cannot access '%s': %s\n", g_program_name, paths[i], strerror(errno));
-			free(new_info);
-			i++;
 			g_had_minor_errors = true;
+			i++;
 			continue;
-		}
-		new_info->name = (char *)paths[i];
-		new_info->namelen = ft_strlen(new_info->name);
-		if (options & LS_DETAILED)
-		{
-			new_info->linklen = readlink(new_info->name, new_info->linkbuf, 256);
-			add_owner_and_group(new_info);
-			update_detail_column_widths(&detail_widths, new_info);
 		}
 		if (S_ISDIR(new_info->status->st_mode))
 		{
@@ -407,44 +477,9 @@ void	list_initial_paths(const char **paths, int path_count, int options)
 	qsort(nondirs, nondir_count, sizeof(struct s_finfo *), g_compare);
 	qsort(dirs, dir_count, sizeof(struct s_finfo *), g_compare);
 
-	// fit columnized output to terminal width
-	int		n_columns = 1;
-	int		*column_widths = NULL;
-	char	*separator = "  ";
-	if (nondir_count > 1 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
-	{
-		int	termwidth = get_termwidth();
-		columnize(&column_widths, &n_columns, nondirs, nondir_count, ft_strlen(separator), termwidth);
-	}
 
-	//do we need to print a newline before the first dir announcement?
-	bool	had_printed = false;
-	//list files
-	if (options & LS_DETAILED)
-	{
-		i = 0;
-		while (i < nondir_count)
-		{
-			print_detailed_info(nondirs[i], detail_widths);
-			i++;
-			had_printed = true;
-		}
-	}
-	else if (options & LS_SINGLE_COLUMN || n_columns == 1)
-	{
-		i = 0;
-		while (i < nondir_count)
-		{
-			ft_printf("%s\n", nondirs[i]->name);
-			i++;
-			had_printed = true;
-		}
-	}
-	else
-	{
-		had_printed = print_columnized(nondirs, nondir_count, column_widths, n_columns, separator);
-	}
-	free(column_widths);
+	// print
+	bool had_printed = print_informations(nondirs, nondir_count, options, detail_meta.w);
 
 	// step into directories
 	i = 0;
@@ -467,32 +502,16 @@ void	list_initial_paths(const char **paths, int path_count, int options)
 		i++;
 	}
 
-	i = 0;
-	while (i < nondir_count)
-	{
-		free(nondirs[i]->status);
-		free(nondirs[i]->owner);
-		free(nondirs[i]->group);
-		free(nondirs[i]);
-		i++;
-	}
-	i = 0;
-	while (i < dir_count)
-	{
-		free(dirs[i]->status);
-		free(dirs[i]->owner);
-		free(dirs[i]->group);
-		free(dirs[i]);
-		i++;
-	}
+	destroy_infos(nondirs, nondir_count);
+	destroy_infos(dirs, dir_count);
 }
 
-int	scan_directory(struct s_finfo **infos, const char *path, int depth, unsigned options)
+int		scan_directory(struct s_finfo **infos, const char *path,
+			struct s_meta *detail_meta, int depth, unsigned options)
 {
 	DIR				*dir;
 	struct dirent	*entry;
 	int				ent_count;
-	int				ok;
 
 	if (depth >= MAX_DEPTH)
 	{
@@ -517,35 +536,11 @@ int	scan_directory(struct s_finfo **infos, const char *path, int depth, unsigned
 		{
 			continue;
 		}
-		struct s_finfo	*info = ft_calloc(1, sizeof(*info));
+		struct s_finfo *info = get_file_info(entry->d_name, detail_meta, dirfd(dir), path, options, AT_SYMLINK_NOFOLLOW);
 		if (!info)
 		{
-			panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
+			continue;
 		}
-		if (options & LS_DETAILED || options & LS_SORT_MTIME)
-		{
-			struct stat	*status = malloc(sizeof(*status));
-			if (!status)
-			{
-				panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
-			}
-			ok = fstatat(dirfd(dir), entry->d_name, status, AT_SYMLINK_NOFOLLOW);
-			if (ok == -1)
-			{
-				ft_dprintf(STDERR, "%s: cannot access '%s/%s': %s\n", g_program_name, path, entry->d_name, strerror(errno));
-				free(status);
-				free(info);
-				g_had_minor_errors = true;
-				continue;
-			}
-			info->status = status;
-		}
-		if (options & LS_DETAILED)
-		{
-			info->linklen = readlinkat(dirfd(dir), entry->d_name, info->linkbuf, 256);
-		}
-		info->name = ft_strdup(entry->d_name);
-		info->namelen = ft_strlen(entry->d_name);
 		info->is_dir = (entry->d_type == DT_DIR);
 		infos[ent_count++] = info;
 	}
@@ -555,96 +550,29 @@ int	scan_directory(struct s_finfo **infos, const char *path, int depth, unsigned
 
 void	list_directory(const char *dir_name, int depth, int options)
 {
-	struct s_finfo		*infos[MAX_BREADTH];
-	int					info_count;
-	size_t				tot_blocks;
-	struct s_col_widths	detail_widths;
-	int					i;
+	struct s_finfo	*infos[MAX_BREADTH];
+	int				info_count;
+	struct s_meta	detail_meta = {0};
 
-	info_count = scan_directory(infos, dir_name, depth, options);
+	info_count = scan_directory(infos, dir_name, &detail_meta, depth, options);
 	if (info_count < 0) {
 		return;
-	}
-
-	// get additional details
-	if (options & LS_DETAILED)
-	{
-		tot_blocks = 0;
-		detail_widths.nlink = 0;
-		detail_widths.size = 0;
-		detail_widths.name = 0;
-		detail_widths.owner = 0;
-		detail_widths.group = 0;
-
-		i = 0;
-		while (i < info_count)
-		{
-			add_owner_and_group(infos[i]);
-			update_detail_column_widths(&detail_widths, infos[i]);
-			tot_blocks += infos[i]->status->st_blocks;
-			i++;
-		}
 	}
 
 	// sort
 	qsort(infos, info_count, sizeof(struct s_finfo *), g_compare);
 
-	// fit columnized output to terminal width
-	int		n_columns = 1;
-	int		*column_widths = NULL;
-	char	*separator = "  ";
-#ifdef DEBUGLOG
-	separator = "||";
-#endif
-	if (info_count > 1 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
-	{
-		int	termwidth = get_termwidth();
-		columnize(&column_widths, &n_columns, infos, info_count, ft_strlen(separator), termwidth);
-	}
-#ifdef DEBUGLOG
-	ft_printf("n_columns: %d\n", n_columns);
-	for (int a = 0; a < n_columns; ++a) {
-		if (column_widths)
-			ft_printf("%*d%s", column_widths[a], column_widths[a], separator);
-	}
-	ft_printf("\n");
-#endif
-
-	// do we need to print a newline before first dir
-	bool	had_printed = false;
-
-	// list files
+	// print
 	if (options & LS_DETAILED)
 	{
-		ft_printf("total %lu\n", tot_blocks / BLOCK_HACK);
-		i = 0;
-		while (i < info_count)
-		{
-			print_detailed_info(infos[i], detail_widths);
-			had_printed = true;
-			i++;
-		}
+		ft_printf("total %lu\n", detail_meta.total_blocks / BLOCK_HACK);
 	}
-	else if (options & LS_SINGLE_COLUMN || n_columns == 1)
-	{
-		i = 0;
-		while (i < info_count)
-		{
-			ft_printf("%s\n", infos[i]->name);
-			had_printed = true;
-			i++;
-		}
-	}
-	else
-	{
-		had_printed = print_columnized(infos, info_count, column_widths, n_columns, separator);
-	}
-	free(column_widths);
+	bool had_printed = print_informations(infos, info_count, options, detail_meta.w);
 
 	// step into directories
 	if (options & LS_RECURSIVE)
 	{
-		i = 0;
+		int i = 0;
 		while (i < info_count)
 		{
 			if (infos[i]->is_dir
@@ -663,22 +591,12 @@ void	list_directory(const char *dir_name, int depth, int options)
 		}
 	}
 
-	i = 0;
-	while (i < info_count)
-	{
-		free(infos[i]->name);
-		free(infos[i]->status);
-		free(infos[i]->owner);
-		free(infos[i]->group);
-		free(infos[i]);
-		i++;
-	}
+	destroy_infos(infos, info_count);
 }
 
 int		main(int argc, const char **argv)
 {
-	unsigned	options;
-	int			i;
+	int			options;
 	const char	*paths[MAX_BREADTH];
 	int			path_count;
 	int 		(*sort_style[4])(const void *left, const void *right) = {
@@ -690,7 +608,7 @@ int		main(int argc, const char **argv)
 	path_count = 0;
 	if (argc > 1)
 	{
-		i = 1;
+		int i = 1;
 		while (i < argc)
 		{
 			if (argv[i][0] == '-')
@@ -703,7 +621,11 @@ int		main(int argc, const char **argv)
 			{
 				panic(Fail_serious, "%s: too many file paths specified. exiting.\n", g_program_name);
 			}
-			paths[path_count] = argv[i];
+			paths[path_count] = ft_strdup(argv[i]);
+			if (!paths[path_count])
+			{
+				panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
+			}
 			path_count++;
 			i++;
 		}
