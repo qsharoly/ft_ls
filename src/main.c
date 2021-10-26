@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/26 21:16:56 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/26 21:49:13 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -341,6 +341,7 @@ struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
 		{
 			ft_dprintf(STDERR, "%s: cannot access '%s/%s': %s\n", g_program_name, dir_path, filename, strerror(errno));
 			free(status);
+			free(info->name);
 			free(info);
 			g_had_minor_errors = true;
 			return NULL;
