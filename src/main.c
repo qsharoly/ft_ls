@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/26 21:49:13 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/26 22:42:58 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -315,6 +315,85 @@ static void update_detail_meta(struct s_meta *meta, struct s_finfo *info)
 	meta->w.name = ft_max(meta->w.name, ft_strlen(info->name));
 }
 
+void	destroy_infos(struct s_finfo **infos, int info_count)
+{
+	int i = 0;
+	while (i < info_count)
+	{
+		free(infos[i]->name);
+		free(infos[i]->status);
+		free(infos[i]->owner);
+		free(infos[i]->group);
+		free(infos[i]);
+		i++;
+	}
+}
+
+bool	print_informations(struct s_finfo **items, int item_count, int options, struct s_width detail_meta_w)
+{
+	// need to print a newline before the first dir announcement?
+	bool	had_printed = false;
+
+	// fit columnized output to terminal width
+	int		n_columns = 1;
+	int		*column_widths = NULL;
+	char	*sep = "  ";
+
+	if (item_count > 1 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
+	{
+		int	termwidth = get_termwidth();
+		columnize(&column_widths, &n_columns, items, item_count, ft_strlen(sep), termwidth);
+	}
+
+	// do printing
+	if (options & LS_DETAILED)
+	{
+		int i = 0;
+		while (i < item_count)
+		{
+			print_detailed_info(items[i], detail_meta_w);
+			i++;
+			had_printed = true;
+		}
+	}
+	else if (options & LS_SINGLE_COLUMN)
+	{
+		int i = 0;
+		while (i < item_count)
+		{
+			ft_printf("%s\n", items[i]->name);
+			i++;
+			had_printed = true;
+		}
+	}
+	else
+	{
+		int height = item_count / n_columns + (item_count % n_columns > 0);
+		int row = 0;
+		while (row < height)
+		{
+			int	start = row;
+			int	step = height;
+			int	idx = start;
+			int col = 0;
+			while (idx < item_count)
+			{
+				if (idx + step < item_count)
+					ft_printf("%-*s%s", column_widths[col], items[idx]->name, sep); 
+				else
+					ft_printf("%s\n", items[idx]->name);
+				col++;
+				idx += step;
+				had_printed = true;
+			}
+			row++;
+		}
+	}
+	free(column_widths);
+
+	return had_printed;
+}
+
 struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
 				int dirfd, const char *dir_path, int options, int statflags)
 {
@@ -355,85 +434,6 @@ struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
 		update_detail_meta(detail_meta, info);
 	}
 	return info;
-}
-
-void	destroy_infos(struct s_finfo **infos, int info_count)
-{
-	int i = 0;
-	while (i < info_count)
-	{
-		free(infos[i]->name);
-		free(infos[i]->status);
-		free(infos[i]->owner);
-		free(infos[i]->group);
-		free(infos[i]);
-		i++;
-	}
-}
-
-bool	print_informations(struct s_finfo **items, int item_count, int options, struct s_width detail_meta_w)
-{
-	// fit columnized output to terminal width
-	int		n_columns = 1;
-	int		*column_widths = NULL;
-	char	*sep = "  ";
-
-	if (item_count > 1 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
-	{
-		int	termwidth = get_termwidth();
-		columnize(&column_widths, &n_columns, items, item_count, ft_strlen(sep), termwidth);
-	}
-
-	// need to print a newline before the first dir announcement?
-	bool	had_printed = false;
-
-	// do printing
-	if (options & LS_DETAILED)
-	{
-		int i = 0;
-		while (i < item_count)
-		{
-			print_detailed_info(items[i], detail_meta_w);
-			i++;
-			had_printed = true;
-		}
-	}
-	else if (options & LS_SINGLE_COLUMN || n_columns == 1)
-	{
-		int i = 0;
-		while (i < item_count)
-		{
-			ft_printf("%s\n", items[i]->name);
-			i++;
-			had_printed = true;
-		}
-	}
-	else
-	{
-		int height = item_count / n_columns + (item_count % n_columns > 0);
-		int row = 0;
-		while (row < height)
-		{
-			int	start = row;
-			int	step = height;
-			int	idx = start;
-			int col = 0;
-			while (idx < item_count)
-			{
-				if (idx + step < item_count)
-					ft_printf("%-*s%s", column_widths[col], items[idx]->name, sep); 
-				else
-					ft_printf("%s\n", items[idx]->name);
-				col++;
-				idx += step;
-				had_printed = true;
-			}
-			row++;
-		}
-	}
-	free(column_widths);
-
-	return had_printed;
 }
 
 void	list_initial_paths(const char **paths, int path_count, int options)
@@ -507,61 +507,50 @@ void	list_initial_paths(const char **paths, int path_count, int options)
 	destroy_infos(dirs, dir_count);
 }
 
-int		scan_directory(struct s_finfo **infos, const char *path,
-			struct s_meta *detail_meta, int depth, unsigned options)
-{
-	DIR				*dir;
-	struct dirent	*entry;
-	int				ent_count;
-
-	if (depth >= MAX_DEPTH)
-	{
-		panic(Fail_serious, "%s: can't list '%s': reached max directory depth.\n", g_program_name, path);
-	}
-	dir = opendir(path);
-	if (!dir)
-	{
-		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s\n", g_program_name, path, strerror(errno));
-		g_had_minor_errors = true;
-		return -1;
-	}
-	ent_count = 0;
-	while ((entry = readdir(dir)))
-	{
-		if (ent_count >= MAX_BREADTH)
-		{
-			panic(Fail_serious, "%s: can't list '%s': reached max number of entries per directory.\n", g_program_name, path);
-		}
-		//skip invisible files
-		if (entry->d_name[0] == '.' && !(options & LS_SHOW_ALL))
-		{
-			continue;
-		}
-		struct s_finfo *info = get_file_info(entry->d_name, detail_meta, dirfd(dir), path, options, AT_SYMLINK_NOFOLLOW);
-		if (!info)
-		{
-			continue;
-		}
-		info->is_dir = (entry->d_type == DT_DIR);
-		infos[ent_count++] = info;
-	}
-	closedir(dir);
-	return ent_count;
-}
-
 void	list_directory(const char *dir_name, int depth, int options)
 {
 	struct s_finfo	*infos[MAX_BREADTH];
 	int				info_count;
 	struct s_meta	detail_meta = {0};
 
-	info_count = scan_directory(infos, dir_name, &detail_meta, depth, options);
-	if (info_count < 0) {
+	// read files from directory
+	DIR				*dir;
+	struct dirent	*entry;
+	if (depth >= MAX_DEPTH)
+	{
+		panic(Fail_serious, "%s: can't list '%s': reached max directory depth.\n", g_program_name, dir_name);
+	}
+	dir = opendir(dir_name);
+	if (!dir)
+	{
+		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s\n", g_program_name, dir_name, strerror(errno));
+		g_had_minor_errors = true;
 		return;
 	}
+	info_count = 0;
+	while ((entry = readdir(dir)))
+	{
+		if (info_count >= MAX_BREADTH)
+		{
+			panic(Fail_serious, "%s: can't list '%s': reached max number of entries per directory.\n", g_program_name, dir_name);
+		}
+		//skip invisible files
+		if (entry->d_name[0] == '.' && !(options & LS_SHOW_ALL))
+		{
+			continue;
+		}
+		struct s_finfo *new_info = get_file_info(entry->d_name, &detail_meta, dirfd(dir), dir_name, options, AT_SYMLINK_NOFOLLOW);
+		if (!new_info)
+		{
+			continue;
+		}
+		new_info->is_dir = (entry->d_type == DT_DIR);
+		infos[info_count++] = new_info;
+	}
+	closedir(dir);
 
 	// sort
-	qsort(infos, info_count, sizeof(struct s_finfo *), g_compare);
+	qsort(infos, info_count, sizeof(*infos), g_compare);
 
 	// print
 	if (options & LS_DETAILED)
