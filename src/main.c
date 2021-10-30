@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/26 22:42:58 by debby            ###   ########.fr       */
+/*   Updated: 2021/10/30 11:35:51 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -589,8 +589,8 @@ int		main(int argc, const char **argv)
 	int			options;
 	const char	*paths[MAX_BREADTH];
 	int			path_count;
-	int 		(*sort_style[4])(const void *left, const void *right) = {
-		alpha, alpha_reverse, mtime, mtime_reverse
+	int 		(*sort_by[2][2])(const void *left, const void *right) = {
+		{ alpha, mtime }, { alpha_reverse, mtime_reverse }
 	};
 
 	g_program_name = argv[0];
@@ -626,7 +626,7 @@ int		main(int argc, const char **argv)
 		paths[0] = ".";
 	}
 	// choose comparison function for sorting
-	g_compare = sort_style[!!(options & LS_SORT_REVERSE) + 2 * !!(options & LS_SORT_MTIME)];
+	g_compare = sort_by[!!(options & LS_SORT_REVERSE)][!!(options & LS_SORT_MTIME)];
 	list_initial_paths(paths, path_count, options);
 	if (g_had_minor_errors)
 		return (Fail_minor);
