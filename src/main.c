@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2021/10/30 11:35:51 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/29 16:41:03 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -334,17 +334,6 @@ bool	print_informations(struct s_finfo **items, int item_count, int options, str
 	// need to print a newline before the first dir announcement?
 	bool	had_printed = false;
 
-	// fit columnized output to terminal width
-	int		n_columns = 1;
-	int		*column_widths = NULL;
-	char	*sep = "  ";
-
-	if (item_count > 1 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
-	{
-		int	termwidth = get_termwidth();
-		columnize(&column_widths, &n_columns, items, item_count, ft_strlen(sep), termwidth);
-	}
-
 	// do printing
 	if (options & LS_DETAILED)
 	{
@@ -368,28 +357,34 @@ bool	print_informations(struct s_finfo **items, int item_count, int options, str
 	}
 	else
 	{
-		int height = item_count / n_columns + (item_count % n_columns > 0);
+		char	*separator = "  ";
+		int		*column_widths = NULL;
+		int		stride = 1;
+		if (item_count > 1 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
+		{
+			int	termwidth = get_termwidth();
+			stride = columnize(&column_widths, items, item_count, ft_strlen(separator), termwidth);
+		}
 		int row = 0;
-		while (row < height)
+		while (row < stride)
 		{
 			int	start = row;
-			int	step = height;
 			int	idx = start;
 			int col = 0;
 			while (idx < item_count)
 			{
-				if (idx + step < item_count)
-					ft_printf("%-*s%s", column_widths[col], items[idx]->name, sep); 
+				if (idx + stride < item_count)
+					ft_printf("%-*s%s", column_widths[col], items[idx]->name, separator); 
 				else
 					ft_printf("%s\n", items[idx]->name);
 				col++;
-				idx += step;
+				idx += stride;
 				had_printed = true;
 			}
 			row++;
 		}
+		free(column_widths);
 	}
-	free(column_widths);
 
 	return had_printed;
 }

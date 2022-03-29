@@ -1,236 +1,118 @@
 #include <stdlib.h>
 #include "ft_ls.h"
 
-enum {
-	Ncol_limit = 20
-};
+//#define DEBUGLOG
 
-typedef struct	s_iw{
-	int	index;
-	int	width;
-}				t_iw;
+#ifdef DEBUGLOG
+#include <stdio.h>
+#endif
+__attribute__((__format__(__printf__, 1, 2)))
+static void	dbglog(const char *format, ...)
+{
+#ifdef DEBUGLOG
+	va_list	ap;
 
-static void	swap_pointers(t_iw **mem1_ptr, t_iw **mem2_ptr) {
-	t_iw	*tmp;
-	tmp = *mem1_ptr;
-	*mem1_ptr = *mem2_ptr;
-	*mem2_ptr = tmp;
+	va_start(ap, format);
+	vprintf(format, ap);
+	va_end(ap);
+#else
+	(void)format;
+#endif
 }
 
-static int	in_range(int test_me, int start, int stop) {
-	return (start <= test_me && test_me < stop);
-}
-
-static t_iw	max_iwidth(struct s_finfo **infos, int start, int stop) {
-	t_iw	max_iw;
-
-	max_iw.index = start;
-	max_iw.width = infos[start]->namelen;
-	start++;
-	while (start < stop)
-	{
-		if (infos[start]->namelen > max_iw.width)
-		{
-			max_iw.index = start;
-			max_iw.width = infos[start]->namelen;
-		}
-		start++;
-	}
-	return max_iw;
-}
-
-static inline int my_min(int a, int b)
+static inline int min(int a, int b)
 {
 	return a < b ? a : b;
 }
 
-#ifdef DEBUGLOG
-#include <stdio.h>
-void	dumpling(struct s_finfo **items, int item_count, t_iw *colwidths, int ncol)
+static int	max_width_between(struct s_finfo **items, int start, int stop)
 {
-	int height = item_count / ncol + (item_count % ncol > 0);
-	int bo = height;
-	int lk = 0;
-	for (int a = 0; a < item_count; ++a)
+	int	max_w;
+
+	max_w = items[start]->namelen;
+	for (int i = start + 1; i < stop; i++)
 	{
-		if (a == bo) {
-			printf("|");
-			bo+=height;
-		}
-		else
-			printf(" ");
-		printf("%2d", items[a]->namelen);
-		if (colwidths[lk].index == a)
-			lk++;
+		if (items[i]->namelen > max_w)
+			max_w = items[i]->namelen;
 	}
-	printf("\n");
-	bo = height;
-	lk = 0;
-	for (int a = 0; a < item_count; ++a)
-	{
-		if (a == bo) {
-			printf("|");
-			bo+=height;
-		}
-		else
-			printf(" ");
-		if (colwidths[lk].index == a) {
-			lk++;
-			printf(" x");
-		}
-		else
-			printf("%2d",a);
-	}
-	printf("\n");
+	dbglog("items [%d, %d): ", start, stop);
+	dbglog("max_width: %d\n", max_w);
+	return max_w;
 }
-#endif
 
-void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
-		int item_count, int separator_width, int width_limit) {
-	t_iw	mem1[Ncol_limit];
-	t_iw	mem2[Ncol_limit];
-	t_iw	*colwidths = mem1;
-	t_iw	*new_widths = mem2;
+static int	column_width_sum(struct s_finfo **items, int item_count, int stride)
+{
+	int	sum = 0;
 
-	colwidths[0] = max_iwidth(items, 0, item_count);
-	*ncol = 1;
-#ifdef DEBUGLOG
-	printf("initial:\n");
-	dumpling(items, item_count, colwidths, *ncol);
-#endif
-	int skipped_over = 0;
-	while (*ncol < Ncol_limit && *ncol < item_count)
+	for (int start = 0; start < item_count; start += stride)
 	{
-		int	lookat = 0;
-		int	old_height = item_count / *ncol + (item_count % *ncol > 0);
-		int	new_at = 0;
-		int	new_height = item_count / (*ncol + 1) + (item_count % (*ncol + 1) > 0);
-#ifdef DEBUGLOG
-		printf("splitting in %d groups of %d or less.\n", *ncol+1, new_height);
-		dumpling(items, item_count, colwidths, *ncol+1);
-#endif
-		if (old_height == new_height)
+		int stop = min(start + stride, item_count);
+		sum += max_width_between(items, start, stop);
+	}
+	return sum;
+}
+
+int	columnize(int **column_widths, struct s_finfo **items, int item_count,
+		int separator_width, int width_limit)
+{
+	dbglog("width_limit: %d\n", width_limit);
+	int stride_small_bound = 1;
+	int	stride_big_bound = item_count;
+	int stride_estimate = 0;
+	while (stride_small_bound != stride_big_bound)
+	{
+		dbglog("\n");
+		int	new_estimate = (stride_small_bound + stride_big_bound) / 2;
+		dbglog("new estimate: %d\n", new_estimate);
+		if (new_estimate == stride_estimate)
 		{
-#ifdef DEBUGLOG
-			printf("not enough elements for groups of %d or less. skipping over.\n", new_height);
-#endif
-			skipped_over += 1;
-			*ncol += 1;
-			continue;
-		}
-		int	new_width_sum = 0;
-		int	col = 0;
-		while (col < *ncol + 1 && col * new_height < item_count)
-		{
-			int	start = col * new_height;
-			int	stop = my_min((col + 1) * new_height, item_count);
-			t_iw	new_iw;
-			if (!in_range(colwidths[lookat].index, start, stop))// || lookat + 1 >= *ncol)
+			if (stride_estimate == stride_small_bound)
 			{
-				//leave lookat unchanged
-				new_iw = max_iwidth(items, start, stop);
-#ifdef DEBUGLOG
-				printf("[%d, %d] => %d\n", start, stop-1, new_iw.index);
-#endif
-			}
-			else if (lookat + 1 >= *ncol || !in_range(colwidths[lookat + 1].index, start, stop))
-			{
-				int	prev_bound = col * old_height;
-				if (prev_bound > 0 && prev_bound < stop)
-				{
-					if (colwidths[lookat].index < prev_bound)
-					{
-						new_iw = max_iwidth(items, prev_bound, stop);
-#ifdef DEBUGLOG
-						printf("<%d vs [%d, %d)", colwidths[lookat].index, prev_bound, stop);
-#endif
-					}
-					else if (colwidths[lookat].index > prev_bound)
-					{
-						new_iw = max_iwidth(items, start, prev_bound);
-#ifdef DEBUGLOG
-						printf(">[%d, %d) vs %d", start, prev_bound, colwidths[lookat].index);
-#endif
-					}
-					else
-					{
-						new_iw = max_iwidth(items, start, prev_bound);
-#ifdef DEBUGLOG
-						printf("=[%d, %d) vs %d", start, prev_bound, colwidths[lookat].index);
-#endif
-					}
-					if (new_iw.width < colwidths[lookat].width)
-						new_iw = colwidths[lookat];
-#ifdef DEBUGLOG
-					printf(" => %d\n", new_iw.index);
-#endif
-				}
-				else
-				{
-					new_iw = colwidths[lookat];
-#ifdef DEBUGLOG
-					printf("just %d\n", new_iw.index);
-#endif
-				}
-				lookat += 1;
+				stride_estimate += 1;
+				dbglog("repeated on small bound, stop at %d\n", stride_estimate);
 			}
 			else
-			{
-#ifdef DEBUGLOG
-				printf("%d vs %d", colwidths[lookat].index, colwidths[lookat+1].index);
-#endif
-				if (colwidths[lookat].width > colwidths[lookat + 1].width)
-					new_iw = colwidths[lookat];
-				else
-					new_iw = colwidths[lookat + 1];
-				lookat += 2;
-#ifdef DEBUGLOG
-				printf(" => %d\n", new_iw.index);
-#endif
-			}
-			new_widths[new_at++] = new_iw;
-			new_width_sum += new_iw.width;
-			col++;
-		}
-#ifdef DEBUGLOG
-		printf("result:\n");
-		dumpling(items, item_count, new_widths, *ncol+1);
-#endif
-		new_width_sum += *ncol * separator_width;
-		if (new_width_sum > width_limit)
-		//new_widths are over the limit.
-		//stop the loop and use current colwidths and ncol.
-		{
-			*ncol -= skipped_over;
-#ifdef DEBUGLOG
-			printf("bad length sum. fallback.\n");
-#endif
+			dbglog("repeated, stop at %d\n", stride_estimate);
 			break;
 		}
-		else if (new_width_sum == width_limit)
-		// new_widths fit exactly within the limit.
-		// stop the loop but increment ncol and use the new_widths for output.
+		stride_estimate = new_estimate;
+		int ncol_estimate = item_count / stride_estimate + (item_count % stride_estimate > 0);
+		dbglog("%d < stride: %d < %d\ncolumns: %d\n", stride_small_bound, stride_estimate, stride_big_bound, ncol_estimate);
+		//here 1 is added to mimic ls behavior:
+		//leave at least one space between text and right edge of terminal
+		int	table_width = separator_width * (ncol_estimate - 1) + 1 
+						+ column_width_sum(items, item_count, stride_estimate);
+		dbglog("table_width: %d\n", table_width);
+		if (table_width < width_limit)
 		{
-			*ncol += 1;
-			swap_pointers(&colwidths, &new_widths);
-			break;
+			dbglog("too narrow. try more columns (smaller stride)\n");
+			stride_big_bound = stride_estimate;
+		}
+		else if (table_width > width_limit)
+		{
+			dbglog("too wide. try less columns (bigger stride)\n");
+			stride_small_bound = stride_estimate;
 		}
 		else
-		// new_width_sum < width_limit. have not reached the limit yet.
 		{
-			*ncol += 1;
-			swap_pointers(&colwidths, &new_widths);
+			dbglog("exact.\n");
+			break;
 		}
 	}
-#ifdef DEBUGLOG
-	printf("final:\n");
-	dumpling(items, item_count, colwidths, *ncol);
-#endif
-	*column_widths = malloc(*ncol * sizeof(**column_widths));
-	int	i = 0;
-	while (i < *ncol)
+	int stride = stride_estimate;
+	int ncol = item_count / stride + (item_count % stride > 0);
+	dbglog("\n");
+	dbglog("ncol: %d\n", ncol);
+	dbglog("stride: %d\n", stride);
+	*column_widths = malloc(ncol * sizeof(**column_widths));
+	int i = 0;
+	int start = 0;
+	while (i < ncol)
 	{
-		(*column_widths)[i] = colwidths[i].width;
+		int	stop = min(start + stride, item_count);
+		(*column_widths)[i] = max_width_between(items, start, stop);
+		start += stride;
 		i++;
 	}
+	return stride;
 }

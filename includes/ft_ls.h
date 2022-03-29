@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2021/10/26 20:07:05 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/29 16:42:12 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,8 +65,8 @@ struct	s_meta
 	struct s_width	w;
 };
 
-void	columnize(int **column_widths, int *ncol, struct s_finfo **items,
-			int item_count, int separator_width, int width_limit);
+int		columnize(int **column_widths, struct s_finfo **items, int item_count,
+			int separator_width, int width_limit);
 int		scan_directory(struct s_finfo **infos, const char *path,
 			struct s_meta *detail_meta, int depth, unsigned options);
 void	list_directory(const char *pathname, int depth, int options);
