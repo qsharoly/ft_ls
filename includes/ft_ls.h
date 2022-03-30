@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2022/03/30 17:19:43 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/30 19:13:11 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,8 +22,6 @@
 #define MAX_BREADTH 2000
 
 #define BLOCK_HACK 2
-
-#define HAS_FILENAMES 1
 
 typedef struct s_options	t_options;
 struct	s_options
