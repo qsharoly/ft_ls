@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/03/30 16:38:57 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/30 17:19:50 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,7 +55,7 @@ static void	print_help()
 	);
 }
 
-static void	parse_an_option(const char *str, int *options)
+static void	parse_an_option(const char *str, t_options *options)
 {
 	int		j;
 	char	c;
@@ -69,19 +69,17 @@ static void	parse_an_option(const char *str, int *options)
 	while ((c = str[j]))
 	{
 		if (c == 'a')
-			*options |= LS_SHOW_ALL;
+			(*options).show_hidden_files = true;
 		else if (c == 'l')
-			*options |= LS_DETAILED;
+			(*options).detailed_mode = true;
 		else if (c == 'r')
-			*options |= LS_SORT_REVERSE;
+			(*options).reverse_sort = true;
 		else if (c == 'R')
-			*options |= LS_RECURSIVE;
+			(*options).recursive = true;
 		else if (c == 't')
-			*options |= LS_SORT_MTIME;
-		else if (c == 'x')
-			*options |= LS_TRANSPOSE_COLUMNS;
+			(*options).sort_by_mtime = true;
 		else if (c == '1')
-			*options |= LS_SINGLE_COLUMN;
+			(*options).single_column = true;
 		else
 		{
 			ft_dprintf(STDERR, "%s: invalid option -- '%s'\n", g_program_name, str);
@@ -329,13 +327,13 @@ void	destroy_infos(struct s_finfo **infos, int info_count)
 	}
 }
 
-bool	print_informations(struct s_finfo **items, int item_count, int options, struct s_width detail_meta_w)
+bool	print_informations(struct s_finfo **items, int item_count, t_options options, struct s_width detail_meta_w)
 {
 	// need to print a newline before the first dir announcement?
 	bool	had_printed = false;
 
 	// do printing
-	if (options & LS_DETAILED)
+	if (options.detailed_mode)
 	{
 		int i = 0;
 		while (i < item_count)
@@ -345,7 +343,7 @@ bool	print_informations(struct s_finfo **items, int item_count, int options, str
 			had_printed = true;
 		}
 	}
-	else if (options & LS_SINGLE_COLUMN)
+	else if (options.single_column)
 	{
 		int i = 0;
 		while (i < item_count)
@@ -360,7 +358,7 @@ bool	print_informations(struct s_finfo **items, int item_count, int options, str
 		char	*separator = "  ";
 		int		*column_widths = NULL;
 		int		stride = 1;
-		if (item_count > 1 && !(options & LS_SINGLE_COLUMN) && !(options & LS_DETAILED))
+		if (item_count > 1 && !options.single_column && !options.detailed_mode)
 		{
 			int	termwidth = get_termwidth();
 			stride = columnize(&column_widths, items, item_count, ft_strlen(separator), termwidth);
@@ -390,7 +388,7 @@ bool	print_informations(struct s_finfo **items, int item_count, int options, str
 }
 
 struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
-				int dirfd, const char *dir_path, int options, int statflags)
+				int dirfd, const char *dir_path, t_options options, int statflags)
 {
 	struct s_finfo	*info;
 	int ok;
@@ -403,7 +401,7 @@ struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
 	info->name = ft_strdup(filename);
 	info->namelen = ft_strlen(filename);
 	//dir_path == NULL means we are called from list_initial_files
-	if (options & LS_DETAILED || options & LS_SORT_MTIME || dir_path == NULL)
+	if (options.detailed_mode || options.sort_by_mtime || dir_path == NULL)
 	{
 		struct stat	*status = malloc(sizeof(*status));
 		if (!status)
@@ -422,7 +420,7 @@ struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
 		}
 		info->status = status;
 	}
-	if (options & LS_DETAILED)
+	if (options.detailed_mode)
 	{
 		info->linklen = readlinkat(dirfd, filename, info->linkbuf, 256);
 		add_owner_and_group(info);
@@ -431,7 +429,7 @@ struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
 	return info;
 }
 
-void	list_initial_paths(const char **paths, int path_count, int options)
+void	list_initial_paths(const char **paths, int path_count, t_options options)
 {
 	struct s_finfo	*nondirs[MAX_BREADTH];
 	struct s_finfo	*dirs[MAX_BREADTH];
@@ -449,7 +447,7 @@ void	list_initial_paths(const char **paths, int path_count, int options)
 	{
 		struct s_finfo	*new_info;
 		//in detailed mode print info about links themselves
-		if (options & LS_DETAILED)
+		if (options.detailed_mode)
 			new_info = get_file_info(paths[i], &detail_meta, AT_FDCWD, NULL, options, AT_SYMLINK_NOFOLLOW);
 		else
 			new_info = get_file_info(paths[i], &detail_meta, AT_FDCWD, NULL, options, 0);
@@ -487,7 +485,7 @@ void	list_initial_paths(const char **paths, int path_count, int options)
 			i++;
 			continue;
 		}
-		if (options & LS_RECURSIVE || path_count > 1)
+		if (options.recursive || path_count > 1)
 		{
 			if (had_printed)
 				ft_printf("\n");
@@ -502,7 +500,7 @@ void	list_initial_paths(const char **paths, int path_count, int options)
 	destroy_infos(dirs, dir_count);
 }
 
-void	list_directory(const char *dir_name, int depth, int options)
+void	list_directory(const char *dir_name, int depth, t_options options)
 {
 	struct s_finfo	*infos[MAX_BREADTH];
 	int				info_count;
@@ -530,7 +528,7 @@ void	list_directory(const char *dir_name, int depth, int options)
 			panic(Fail_serious, "%s: can't list '%s': reached max number of entries per directory.\n", g_program_name, dir_name);
 		}
 		//skip invisible files
-		if (entry->d_name[0] == '.' && !(options & LS_SHOW_ALL))
+		if (entry->d_name[0] == '.' && !options.show_hidden_files)
 		{
 			continue;
 		}
@@ -548,14 +546,14 @@ void	list_directory(const char *dir_name, int depth, int options)
 	qsort(infos, info_count, sizeof(*infos), g_compare);
 
 	// print
-	if (options & LS_DETAILED)
+	if (options.detailed_mode)
 	{
 		ft_printf("total %lu\n", detail_meta.total_blocks / BLOCK_HACK);
 	}
 	bool had_printed = print_informations(infos, info_count, options, detail_meta.w);
 
 	// step into directories
-	if (options & LS_RECURSIVE)
+	if (options.recursive)
 	{
 		int i = 0;
 		while (i < info_count)
@@ -581,15 +579,15 @@ void	list_directory(const char *dir_name, int depth, int options)
 
 int		main(int argc, const char **argv)
 {
-	int			options;
+	t_options	options;
 	const char	*paths[MAX_BREADTH];
 	int			path_count;
-	int 		(*sort_by[2][2])(const void *left, const void *right) = {
+	int 		(*cmp_select[2][2])(const void *left, const void *right) = {
 		{ alpha, mtime }, { alpha_reverse, mtime_reverse }
 	};
 
 	g_program_name = argv[0];
-	options = 0;
+	options = (t_options){0};
 	path_count = 0;
 	if (argc > 1)
 	{
@@ -620,8 +618,7 @@ int		main(int argc, const char **argv)
 		path_count = 1;
 		paths[0] = ".";
 	}
-	// choose comparison function for sorting
-	g_compare = sort_by[!!(options & LS_SORT_REVERSE)][!!(options & LS_SORT_MTIME)];
+	g_compare = cmp_select[options.reverse_sort][options.sort_by_mtime];
 	list_initial_paths(paths, path_count, options);
 	if (g_had_minor_errors)
 		return (Fail_minor);

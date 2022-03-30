@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2022/03/29 16:42:12 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/30 17:19:43 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,13 +24,17 @@
 #define BLOCK_HACK 2
 
 #define HAS_FILENAMES 1
-#define LS_SHOW_ALL (1<<1)
-#define LS_DETAILED (1<<2)
-#define LS_SORT_REVERSE (1<<3)
-#define LS_RECURSIVE (1<<4)
-#define LS_SORT_MTIME (1<<5)
-#define LS_TRANSPOSE_COLUMNS (1<<6)
-#define LS_SINGLE_COLUMN (1<<7)
+
+typedef struct s_options	t_options;
+struct	s_options
+{
+	bool	show_hidden_files;
+	bool	detailed_mode;
+	bool	recursive;
+	bool	reverse_sort;
+	bool	sort_by_mtime;
+	bool	single_column;
+};
 
 enum e_exitcode
 {
@@ -68,7 +72,7 @@ struct	s_meta
 int		columnize(int **column_widths, struct s_finfo **items, int item_count,
 			int separator_width, int width_limit);
 int		scan_directory(struct s_finfo **infos, const char *path,
-			struct s_meta *detail_meta, int depth, unsigned options);
-void	list_directory(const char *pathname, int depth, int options);
+			struct s_meta *detail_meta, int depth, t_options options);
+void	list_directory(const char *pathname, int depth, t_options options);
 
 #endif
