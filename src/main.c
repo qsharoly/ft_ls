@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/03/30 17:39:48 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/30 19:36:04 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,15 +55,26 @@ static void	print_help()
 	);
 }
 
-static void	parse_an_option(const char *str, t_options *options)
+static bool	parse_as_option(const char *str, t_options *options)
 {
 	int		j;
 	char	c;
 
-	if (ft_strequ(str, "--help"))
+	if (str[0] != '-')
+		return false;
+	if (str[1] == '-')
 	{
-		print_help();
-		exit(Success);
+		if (ft_strequ(str, "--help"))
+		{
+			print_help();
+			exit(Success);
+		}
+		else
+		{
+			ft_dprintf(STDERR, "%s: unrecognized option '%s'\n", g_program_name, str);
+			ft_dprintf(STDERR, "Try '%s --help' for more information.\n", g_program_name);
+			exit(Fail_serious);
+		}
 	}
 	j = 1; //skip first dash
 	while ((c = str[j]))
@@ -82,12 +93,13 @@ static void	parse_an_option(const char *str, t_options *options)
 			(*options).single_column = true;
 		else
 		{
-			ft_dprintf(STDERR, "%s: invalid option -- '%s'\n", g_program_name, str);
+			ft_dprintf(STDERR, "%s: invalid option -- '%c'\n", g_program_name, c);
 			ft_dprintf(STDERR, "Try '%s --help' for more information.\n", g_program_name);
 			exit(Fail_serious);
 		}
 		j++;
 	}
+	return true;
 }
 
 __attribute__((__format__(__printf__, 2, 3)))
@@ -589,9 +601,8 @@ int		main(int argc, const char **argv)
 		int i = 1;
 		while (i < argc)
 		{
-			if (argv[i][0] == '-')
+			if (parse_as_option(argv[i], &options))
 			{
-				parse_an_option(argv[i], &options);
 				i++;
 				continue;
 			}
