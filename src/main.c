@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/03/30 17:19:50 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/30 17:39:48 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -256,9 +256,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	}
 	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %s", perms, w.nlink - 1, nlink, w.owner, f->owner, w.group, f->group, w.size - 1, fsize, mmm_dd, hm_or_yy, f->name);
 	if (S_ISLNK(mode))
-	{
 		ft_printf(" -> %.*s\n", f->linklen, f->linkbuf);
-	}
 	else
 		ft_printf("\n");
 }
@@ -358,7 +356,7 @@ bool	print_informations(struct s_finfo **items, int item_count, t_options option
 		char	*separator = "  ";
 		int		*column_widths = NULL;
 		int		stride = 1;
-		if (item_count > 1 && !options.single_column && !options.detailed_mode)
+		if (item_count > 1)
 		{
 			int	termwidth = get_termwidth();
 			stride = columnize(&column_widths, items, item_count, ft_strlen(separator), termwidth);
@@ -458,12 +456,9 @@ void	list_initial_paths(const char **paths, int path_count, t_options options)
 			continue;
 		}
 		if (S_ISDIR(new_info->status->st_mode))
-		{
 			dirs[dir_count++] = new_info;
-			i++;
-			continue;
-		}
-		nondirs[nondir_count++] = new_info;
+		else
+			nondirs[nondir_count++] = new_info;
 		i++;
 	}
 
@@ -475,7 +470,7 @@ void	list_initial_paths(const char **paths, int path_count, t_options options)
 	// print
 	bool had_printed = print_informations(nondirs, nondir_count, options, detail_meta.w);
 
-	// step into directories
+	// list directories (maybe recursively)
 	i = 0;
 	while (i < dir_count)
 	{
