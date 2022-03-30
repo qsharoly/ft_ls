@@ -72,7 +72,7 @@ int	columnize(int **column_widths, struct s_finfo **items, int item_count,
 				dbglog("repeated on small bound, stop at %d\n", stride_estimate);
 			}
 			else
-			dbglog("repeated, stop at %d\n", stride_estimate);
+				dbglog("repeated, stop at %d\n", stride_estimate);
 			break;
 		}
 		stride_estimate = new_estimate;
