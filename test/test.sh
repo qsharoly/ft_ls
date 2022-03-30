@@ -17,13 +17,20 @@ function test() {
 	let TOTAL++
 	local FTLS_OUTFILE="$OUTPATH/$TOTAL.ftls"
 	local LS_OUTFILE="$OUTPATH/$TOTAL.ls"
+	local STDERR_FILE="$OUTPATH/$TOTAL.stderr"
+
 	local DIFF_FILE="$OUTPATH/$TOTAL.diff"
 
-	ft_ls $1 > $FTLS_OUTFILE
-	ls $1 > $LS_OUTFILE
+	ft_ls $1 > $FTLS_OUTFILE 2>$STDERR_FILE
+	ls $1 > $LS_OUTFILE 2>>$STDERR_FILE
+
+	if [[ ! -s $STDERR_FILE ]] ; then
+		rm $STDERR_FILE
+	fi
 
 	if diff -u $FTLS_OUTFILE $LS_OUTFILE > $DIFF_FILE ; then
 		let OK++
+		rm $DIFF_FILE $FTLS_OUTFILE $LS_OUTFILE
 	else
 		echo Failed test $TOTAL: \"ft_ls $1\" \($2\).
 	fi
@@ -57,8 +64,8 @@ test "-lR d1 dirlink" "dir and a dir link, recursive, detailed"
 
 mkdir -p "eacess"
 chmod u-r "eacess"
-test "-1 -R" "recursive, inaccessible directory" 2>/dev/null
-test "-lR" "recursive, detailed, inaccessible directory" 2>/dev/null
+test "-1 -R" "recursive, inaccessible directory"
+test "-lR" "recursive, detailed, inaccessible directory"
 rm -rf "eacess"
 
 echo
