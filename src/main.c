@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/03/30 19:36:04 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/30 19:44:27 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -610,11 +610,7 @@ int		main(int argc, const char **argv)
 			{
 				panic(Fail_serious, "%s: too many file paths specified. exiting.\n", g_program_name);
 			}
-			paths[path_count] = ft_strdup(argv[i]);
-			if (!paths[path_count])
-			{
-				panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
-			}
+			paths[path_count] = argv[i];
 			path_count++;
 			i++;
 		}
