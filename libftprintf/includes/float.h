@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/06/13 11:52:21 by debby             #+#    #+#             */
-/*   Updated: 2020/08/21 20:59:55 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/27 20:38:10 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,23 +29,18 @@ union					u_f64
 union					u_f80
 {
 	long double			f;
-	struct {
+	struct s_f80_bits {
 		unsigned long	mantissa:64;
 		unsigned int	exponent:15;
 		unsigned int	sign:1;
 	}					bits;
 };
 
-int						ft_isneg(long double d);
-int						ft_isinf64(double d);
-int						ft_isinf(long double d);
-int						ft_isnan64(double d);
-int						ft_isnan(long double d);
-int						ft_issub64(double d);
-int						ft_issub(long double d);
-double					ft_fabs64(double d);
-long double				ft_fabs(long double d);
-double					ft_trunc64(double d);
-long double				ft_trunc(long double d);
+int						fp_isneg(long double d);
+int						fp_isinf(long double d);
+int						fp_isnan(long double d);
+int						fp_issub(long double d);
+long double				fp_fabs(long double d);
+long double				fp_trunc(long double d);
 
 #endif

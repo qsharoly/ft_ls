@@ -6,15 +6,14 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 04:10:05 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/10 08:57:07 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/26 22:56:47 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "libft.h"
 #include "libftprintf.h"
 #include "bignum.h"
 
-static char	*utoa_digit(char *pos, t_digit value, int fill_at_least)
+static char	*utoa_digit(char *pos, t_digit value, int must_fill)
 {
 	int	count;
 
@@ -26,35 +25,32 @@ static char	*utoa_digit(char *pos, t_digit value, int fill_at_least)
 		pos--;
 		count++;
 	}
-	while (count < fill_at_least)
+	if (must_fill)
 	{
-		*pos = '0';
-		pos--;
-		count++;
+		while (count < BIG_CHARS_PER_DIGIT)
+		{
+			*pos = '0';
+			pos--;
+			count++;
+		}
 	}
 	return (pos);
 }
 
-char		*big_str(char buf[BIG_MAX_CHARS + 1], t_big a)
+char	*big_str(char buf[BIG_MAX_CHARS + 1], t_big a)
 {
 	char	*pos;
 	int		i;
-	int		fill_at_least;
+	int		must_fill;
 
-
-	if (a.overflow_occured)
-	{
-		ft_strcpy(buf, "bignum overflow!");
-		return (buf);
-	}
 	pos = &buf[BIG_MAX_CHARS];
 	*pos = '\0';
 	pos--;
 	i = 0;
 	while (i < a.used)
 	{
-		fill_at_least = i < a.used - 1 ? BIG_DIGIT_CHARS : 0;
-		pos = utoa_digit(pos, a.val[i], fill_at_least);
+		must_fill = (i < a.used - 1);
+		pos = utoa_digit(pos, a.val[i], must_fill);
 		i++;
 	}
 	pos++;

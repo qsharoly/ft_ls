@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 05:31:25 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/02/28 12:06:25 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/25 22:49:15 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,38 +15,36 @@
 #include "float.h"
 #include <limits.h>
 
-char		sign_char(int is_negative, const t_fmt *fmt)
+t_sv	sign_prefix(int is_negative, const t_fmt *fmt)
 {
 	if (is_negative)
-		return ('-');
-	else if (fmt->explicit_plus)
-		return ('+');
-	else if (fmt->prepend_space)
-		return (' ');
+		return (sv_from_cstr("-"));
+	else if (fmt->plus_mode == ExplicitPlus)
+		return (sv_from_cstr("+"));
+	else if (fmt->plus_mode == ExplicitSpace)
+		return (sv_from_cstr(" "));
 	else
-		return (0);
+		return (sv_from_cstr(""));
 }
 
 static int	put_if_special(t_stream *out, t_fmt *fmt, long double nb)
 {
-	char	*s;
-	char	sign;
-	int		pad_len;
+	t_sv		value;
+	t_sv		sign;
+	int			pad_length;
 
-	s = NULL;
-	if (ft_isnan(nb))
-		s = "nan";
-	else if (ft_isinf(nb))
-		s = "inf";
-	if (s == NULL)
+	if (fp_isnan(nb))
+		value = sv_from_cstr("nan");
+	else if (fp_isinf(nb))
+		value = sv_from_cstr("inf");
+	else
 		return (0);
-	sign = sign_char(ft_isneg(nb), fmt);
-	pad_len = fmt->min_width - ((sign != '\0') + ft_strlen(s));
-	pf_repeat(' ', !fmt->left_align * pad_len, out);
-	if (sign)
-		pf_putc(sign, out);
-	pf_puts(s, out);
-	pf_repeat(' ', fmt->left_align * pad_len, out);
+	sign = sign_prefix(fp_isneg(nb), fmt);
+	pad_length = fmt->min_width - (sign.length + value.length);
+	put_repeat(' ', (fmt->align == AlignRight) * pad_length, out);
+	put_sv(sign, out);
+	put_sv(value, out);
+	put_repeat(' ', (fmt->align == AlignLeft) * pad_length, out);
 	return (1);
 }
 
@@ -54,7 +52,7 @@ void		conv_floating(t_stream *out, t_fmt *fmt, va_list ap)
 {
 	long double	d;
 
-	if (fmt->size == Size_longdouble)
+	if (fmt->size == Size_L)
 		d = va_arg(ap, long double);
 	else
 		d = va_arg(ap, double);
@@ -62,7 +60,7 @@ void		conv_floating(t_stream *out, t_fmt *fmt, va_list ap)
 		fmt->precision = DTOA_DEFAULT_PRECISION;
 	if (put_if_special(out, fmt, d))
 		return ;
-	if (ft_fabs(d) < (long double)ULONG_MAX && fmt->precision < 20)
+	if (fp_fabs(d) < (long double)ULONG_MAX && fmt->precision < 20)
 		pf_dtoa_quick(out, d, fmt);
 	else
 		pf_dtoa(out, d, fmt);

@@ -6,14 +6,14 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 13:26:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/08/23 05:40:34 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/31 13:51:24 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 #include "libftprintf.h"
 
-void 	(* const g_conv_table[256])(t_stream *, t_fmt *, va_list) = {
+static void	(* const g_conv_table[256])(t_stream *, t_fmt *, va_list) = {
 	['%'] = conv_percent,
 	['c'] = conv_char,
 	['s'] = conv_str,
@@ -27,20 +27,25 @@ void 	(* const g_conv_table[256])(t_stream *, t_fmt *, va_list) = {
 	['f'] = conv_floating,
 };
 
-static int			is_printf_flag(int c)
+static int			is_flag_character(char c)
 {
 	return (c == '0' || c == '-' || c == '+' || c == ' ' || c == '#');
 }
 
 static const char	*parse_flags(const char *pos, t_fmt *fmt)
 {
-	while (is_printf_flag(*pos))
+	while (is_flag_character(*pos))
 	{
-		fmt->pad_with_zero |= (*pos == '0');
-		fmt->left_align |= (*pos == '-');
-		fmt->explicit_plus |= (*pos == '+');
-		fmt->prepend_space |= (*pos == ' ');
-		fmt->alternative_form |= (*pos == '#');
+		if (*pos == '0')
+			fmt->align_right_by_leading_zeros = 1;
+		else if (*pos == '-')
+			fmt->align = AlignLeft;
+		else if (*pos == '+')
+			fmt->plus_mode = ExplicitPlus;
+		else if (*pos == ' ' && fmt->plus_mode != ExplicitPlus)
+			fmt->plus_mode = ExplicitSpace;
+		else if (*pos == '#')
+			fmt->alternative_form = 1;
 		pos++;
 	}
 	return (pos);
@@ -57,14 +62,11 @@ static const char	*parse_size_modifier(const char *pos, t_fmt *fmt)
 	else if (*pos == 'l')
 		fmt->size = Size_l;
 	else if (*pos == 'L')
-		fmt->size = Size_longdouble;
-	else
-		fmt->size = Size_normal;
-	if (fmt->size == Size_hh || fmt->size == Size_ll)
-		pos += 2;
-	else if (fmt->size == Size_h || fmt->size == Size_l
-			|| fmt->size == Size_longdouble)
+		fmt->size = Size_L;
+	if (fmt->size == Size_h || fmt->size == Size_l || fmt->size == Size_L)
 		pos += 1;
+	else if (fmt->size == Size_hh || fmt->size == Size_ll)
+		pos += 2;
 	return (pos);
 }
 
@@ -79,22 +81,6 @@ static const char	*parse_a_number(const char *pos, int *value)
 	return (pos);
 }
 
-static char			choose_padchar(const t_fmt *fmt)
-{
-	char	padchar;
-
-	if (fmt->pad_with_zero && !fmt->left_align)
-		padchar = '0';
-	else
-		padchar = ' ';
-	if (fmt->pad_with_zero && fmt->has_precision
-		&& (fmt->write_arg == conv_signed || fmt->write_arg == conv_unsigned))
-		padchar = ' ';
-	if (fmt->write_arg == conv_str)
-		padchar = ' ';
-	return (padchar);
-}
-
 static const char	*parse_min_width(const char *pos, t_fmt *fmt, va_list ap)
 {
 	int		nb;
@@ -104,7 +90,7 @@ static const char	*parse_min_width(const char *pos, t_fmt *fmt, va_list ap)
 		pos++;
 		nb = va_arg(ap, int);
 		if (nb < 0)
-			fmt->left_align = 1;
+			fmt->align = AlignLeft;
 		fmt->min_width = ft_abs(nb);
 	}
 	else
@@ -160,7 +146,6 @@ t_fmt				pf_parse_specifier(const char *str, va_list ap)
 	pos = parse_precision(pos, &fmt, ap);
 	pos = parse_size_modifier(pos, &fmt);
 	pos = parse_conv(pos, &fmt);
-	fmt.padchar = choose_padchar(&fmt);
 	fmt.spec_length = pos - str;
 	return (fmt);
 }

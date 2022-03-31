@@ -14,8 +14,10 @@ void	check_d(const char *format, int param, int value, const char *literals)
 
 int		main(void)
 {
-	//wildcard width & precision
+	ft_printf("\n=== Wildcards ===\n");
+	// width
 	check_d("{%*3d}", 5, 0, "5, 0");
+	// precision
 	check_d("{%05.*d}", -15, 42, "-15, 42");
 	return (0);
 }

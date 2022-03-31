@@ -9,6 +9,7 @@ int		main(int argc, char **argv)
 	__attribute__((__format__(printf, 1, 2)))
 	int		(*printf_call)(const char *, ...);
 
+	ft_printf("\n=== Floats: speed ===\n");
 	printf_call = ft_printf;
 	if (argc > 1 && ft_strequ(argv[1], "-libc"))
 		printf_call = printf;

@@ -6,32 +6,39 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/08/09 12:54:10 by debby             #+#    #+#             */
-/*   Updated: 2021/02/28 11:05:19 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/23 20:19:37 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libftprintf.h"
 
-void	pf_puts(const char *s, t_stream *b)
-{
-	while (*s)
-	{
-		pf_putc(*s, b);
-		s++;
-	}
-}
-
-void	pf_nputs(const char *s, int len, t_stream *b)
-{
-	while (*s && len-- > 0)
-	{
-		pf_putc(*s, b);
-		s++;
-	}
-}
-
-void	pf_repeat(char c, int times, t_stream *out)
+void	put_repeat(char c, int times, t_stream *out)
 {
 	while (times-- > 0)
 		pf_putc(c, out);
 }
+
+void	put_sv(t_sv view, t_stream *b)
+{
+	while (view.length-- > 0)
+		pf_putc(*(view.start++), b);
+}
+
+void	put_sv_padded(t_sv view, int pad_len, enum e_align align, t_stream *b)
+{
+	if (align == AlignLeft)
+	{
+		put_sv(view, b);
+		put_repeat(' ', pad_len, b);
+	}
+	else if (align == AlignRight)
+	{
+		put_repeat(' ', pad_len, b);
+		put_sv(view, b);
+	}
+	else
+	{
+		// bad arguments
+	}
+}
+

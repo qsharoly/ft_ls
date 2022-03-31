@@ -6,37 +6,31 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/08/06 19:10:22 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/02/28 12:06:20 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/25 22:49:07 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 #include "libftprintf.h"
 
-void	pf_putnbr(t_stream *out, const char *value_start, const char *prefix,
-			const t_fmt *fmt)
+void	pf_putnbr(t_stream *out, t_sv value, t_sv prefix, const t_fmt *fmt)
 {
-	int				value_len;
-	int				pre_len;
 	int				zero_fill;
-	int				pad_len;
+	int				pad_length;
 
-	value_len = ft_strlen(value_start);
-	pre_len = ft_strlen(prefix);
-	if (fmt->pad_with_zero && !fmt->left_align && !fmt->has_precision)
+	if (fmt->align_right_by_leading_zeros && fmt->align == AlignRight && !fmt->has_precision)
 	{
-		zero_fill = ft_max(0, fmt->min_width - value_len - pre_len);
-		pad_len = 0;
+		zero_fill = ft_max(0, fmt->min_width - value.length - prefix.length);
+		pad_length = 0;
 	}
 	else
 	{
-		zero_fill = ft_max(0, fmt->precision - value_len);
-		pad_len = fmt->min_width - pre_len - zero_fill - value_len;
+		zero_fill = ft_max(0, fmt->precision - value.length);
+		pad_length = fmt->min_width - prefix.length - zero_fill - value.length;
 	}
-	pf_repeat(fmt->padchar, !fmt->left_align * pad_len, out);
-	if (pre_len)
-		pf_puts(prefix, out);
-	pf_repeat('0', zero_fill, out);
-	pf_puts(value_start, out);
-	pf_repeat(fmt->padchar, fmt->left_align * pad_len, out);
+	put_repeat(' ', (fmt->align == AlignRight) * pad_length, out);
+	put_sv(prefix, out);
+	put_repeat('0', zero_fill, out);
+	put_sv(value, out);
+	put_repeat(' ', (fmt->align == AlignLeft) * pad_length, out);
 }

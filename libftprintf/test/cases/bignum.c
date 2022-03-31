@@ -1,21 +1,26 @@
 #include <stdio.h>
 #include "../includes/bignum.h"
+#include "../print_bits.c"
 
-void	big_print_bits(t_big a)
+static void	big_print_bits(t_big a)
 {
 	int		chunk_idx;
 
-	chunk_idx = BIG_N_CHUNKS - 1;
+	chunk_idx = BIG_N_DIGITS - 1;
 	while (chunk_idx >= 0)
 	{
-		print_bits(&(a.val[chunk_idx]), CHUNK_N_BITS);
+		print_bits(&(a.val[chunk_idx]), BIG_DIGIT_CHARS * 8);
 		printf(" ");
 		chunk_idx--;
 	}
 	printf("\n");
 }
 
-void	test_big_sub(void)
+/*
+//
+// big_sub is not implemented yet...
+//
+void test_big_sub(void)
 {
 	t_big	a;
 	t_big	b;
@@ -37,4 +42,11 @@ void	test_big_sub(void)
 	big_print_bits(diff);
 	printf("\n");
 	printf("cmp(a, diff + b) returned %d\n", check);
+}
+*/
+
+int main(void)
+{
+	printf("\n=== Bignums ===\n");
+	return (0);
 }

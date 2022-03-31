@@ -5,9 +5,10 @@
 int		main(void)
 {
 	int		i;
-	char	*s;
+	char	*st;
 
-	s = "hello";
+	st = "hello";
+	ft_printf("\n=== Basic formatting ===\n");
 	//while (1)
 	{
 		//simple cases
@@ -16,12 +17,12 @@ int		main(void)
 		ft_printf("just a string\n");
 		ft_printf("just an int %d def\n", 5);
 		ft_printf("%s well\n", "very");
-		ft_printf("my %s equals %d%%\n", s, -123);
+		ft_printf("my %s equals %d%%\n", st, -123);
 		ft_printf("abc %x %X %x %X\n", 42, 42, -42, -42);
 		printf("abc %x %X %x %X\n", 42, 42, -42, -42);
 		*/
 		//percent sign
-		ft_printf("percent sign%%ef\n");
+		ft_printf("percent sign%%df\n");
 		//+ without specifier
 		ft_printf("%");
 		//+ with precision and width
@@ -103,19 +104,21 @@ int		main(void)
 		ft_printf("%06.d %06.0d\n", 1, 2);
 		printf("%06.d %06.0d\n", 1, 2);
 		//+ strings
-		ft_printf("%10s\n %010s\n", s, s);
-		printf("%10s\n %010s\n", s, s);
-		ft_printf("%10.s\n%10.0s\n%10.1s\n", s, s, s);
-		printf("%10.s\n%10.0s\n%10.1s\n", s, s, s);
+		ft_printf("%10s\n %010s\n", st, st);
+		printf("%10s\n %010s\n", st, st);
+		ft_printf("%10.s\n%10.0s\n%10.1s\n", st, st, st);
+		printf("%10.s\n%10.0s\n%10.1s\n", st, st, st);
 		//+ left-justify
-		ft_printf("%-10.s\n%-10.0s\n%-10.1s\n", s, s, s);
-		printf("%-10.s\n%-10.0s\n%-10.1s\n", s, s, s);
+		ft_printf("%-10.s\n%-10.0s\n%-10.1s\n", st, st, st);
+		printf("%-10.s\n%-10.0s\n%-10.1s\n", st, st, st);
 		*/
 		//pointers
-		ft_printf("%p %p %p, %.2p\n", s, NULL, printf, NULL);
-		printf("%p %p %p, %.2p\n", s, NULL, printf, NULL);
-		ft_printf("%20p %-20p\n", NULL, NULL);
-		printf("%20p %-20p\n", NULL, NULL);
+		ft_printf("%p %p %p, %.2p\n", st, NULL, printf, NULL);
+		printf("%p %p %p, %.2p\n", st, NULL, printf, NULL);
+		ft_printf("[%20p] [%-20p]\n", NULL, NULL);
+		printf("[%20p] [%-20p]\n", NULL, NULL);
+		ft_printf("[%020p] [%+-20p] [% -20p]\n", st, st, st);
+		printf("[%020p] [%+-20p] [% -20p]\n", st, st, st);
 		/*
 		*/
 		/*

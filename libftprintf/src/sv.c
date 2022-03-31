@@ -1,37 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_issub.c                                         :+:      :+:    :+:   */
+/*   sv.c                                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2020/06/18 15:11:29 by debby             #+#    #+#             */
-/*   Updated: 2020/08/21 21:02:04 by debby            ###   ########.fr       */
+/*   Created: 2022/03/23 20:19:48 by debby             #+#    #+#             */
+/*   Updated: 2022/03/26 20:29:32 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "float.h"
+#include "libft.h"
+#include "sv.h"
 
-/*
-**int		ft_issub64(double d)
-**{
-**	union u_f64	tmp;
-**
-**	tmp.f = d;
-**	if (tmp.bits.exponent == 0)
-**		return (1);
-**	else
-**		return (0);
-**}
-*/
-
-int		ft_issub(long double d)
+t_sv	sv_from_cstr(const char *cstring)
 {
-	union u_f80	tmp;
+	t_sv	sv;
 
-	tmp.f = d;
-	if (tmp.bits.exponent == 0)
-		return (1);
-	else
-		return (0);
+	sv = (t_sv){ cstring, ft_strlen(cstring) };
+	return (sv);
 }

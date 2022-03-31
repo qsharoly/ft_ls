@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 void	print_bits(void *a, int n_bits)
 {
 	int		i;
@@ -14,9 +16,8 @@ void	print_bits2(void *a, int n_bits)
 {
 	int		i;
 	int		bit;
-	char	buf[1005];
+	char	buf[1005] = {0};
 
-	bzero(buf, sizeof(buf));
 	i = 0;
 	while (i < n_bits)
 	{

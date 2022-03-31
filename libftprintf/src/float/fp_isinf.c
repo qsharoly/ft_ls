@@ -1,33 +1,46 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_fabs.c                                          :+:      :+:    :+:   */
+/*   fp_isinf.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2020/06/13 09:38:53 by debby             #+#    #+#             */
-/*   Updated: 2020/08/21 21:03:34 by debby            ###   ########.fr       */
+/*   Created: 2020/06/18 15:09:44 by debby             #+#    #+#             */
+/*   Updated: 2022/03/27 20:41:59 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "float.h"
 
 /*
-**double		ft_fabs64(double nb)
+**int		fp_isinf64(double nb)
 **{
 **	union u_f64	tmp;
 **
 **	tmp.f = nb;
-**	tmp.bits.sign = 0;
-**	return (tmp.f);
+**	if (tmp.bits.exponent == 0x7ff && tmp.bits.mantissa == 0)
+**		return (tmp.bits.sign ? -1 : 1);
+**	else
+**		return (0);
 **}
 */
 
-long double	ft_fabs(long double nb)
+/*
+** mantissa bit shift accounts for explicit leading 1 in f80 mantissa
+*/
+
+int	fp_isinf(long double nb)
 {
 	union u_f80	tmp;
 
 	tmp.f = nb;
-	tmp.bits.sign = 0;
-	return (tmp.f);
+	if (tmp.bits.exponent == 0x7fff && (tmp.bits.mantissa << 1) == 0)
+	{
+		if (tmp.bits.sign)
+			return (-1);
+		else
+			return (1);
+	}
+	else
+		return (0);
 }

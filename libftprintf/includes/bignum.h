@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 04:19:11 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/20 14:04:48 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/26 22:59:15 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,12 +16,13 @@
 /*
 ** `t_digit` must be enough to hold (BIG_BASE)
 ** `t_digit_tmp` must be enough to hold (BIG_BASE * BIG_BASE)
+**
 */
 
 # define BIG_N_DIGITS 90
 # define BIG_BASE 100000000
-# define BIG_DIGIT_CHARS 8
-# define BIG_MAX_CHARS (BIG_DIGIT_CHARS * BIG_N_DIGITS)
+# define BIG_CHARS_PER_DIGIT 8
+# define BIG_MAX_CHARS (BIG_CHARS_PER_DIGIT * BIG_N_DIGITS)
 
 typedef unsigned long	t_digit;
 typedef long long		t_digit_tmp;
@@ -30,7 +31,6 @@ typedef	struct			s_big
 {
 	t_digit	val[BIG_N_DIGITS];
 	int		used;
-	int		overflow_occured:1;
 }						t_big;
 
 t_big					big_zero(void);

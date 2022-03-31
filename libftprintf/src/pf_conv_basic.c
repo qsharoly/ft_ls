@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 12:23:11 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/10 06:20:52 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/24 01:16:16 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,12 +19,12 @@
 void	conv_percent(t_stream *out, t_fmt *f, va_list ap)
 {
 	int		pad_len;
+	char	cto[1];
 
 	(void)ap;
-	pad_len = ft_max(0, f->min_width - 1);
-	pf_repeat(f->padchar, !f->left_align * pad_len, out);
-	pf_putc('%', out);
-	pf_repeat(f->padchar, f->left_align * pad_len, out);
+	cto[0] = '%';
+	pad_len = f->min_width - 1;
+	put_sv_padded((t_sv){ cto, 1 }, pad_len, f->align, out);
 }
 
 #elif __linux__
@@ -41,20 +41,18 @@ void	conv_percent(t_stream *out, t_fmt *f, va_list ap)
 void	conv_char(t_stream *out, t_fmt *f, va_list ap)
 {
 	int		pad_len;
-	char	c;
+	char	c[1];
 
-	c = (char)va_arg(ap, int);
-	pad_len = ft_max(0, f->min_width - 1);
-	pf_repeat(f->padchar, !f->left_align * pad_len, out);
-	pf_putc(c, out);
-	pf_repeat(f->padchar, f->left_align * pad_len, out);
+	c[0] = (char)va_arg(ap, int);
+	pad_len = f->min_width - 1;
+	put_sv_padded((t_sv){ c, 1 }, pad_len, f->align, out);
 }
 
 void	conv_str(t_stream *out, t_fmt *f, va_list ap)
 {
-	int		value_len;
 	int		pad_len;
 	char	*s;
+	t_sv	view;
 
 	s = va_arg(ap, char *);
 	if (!s)
@@ -64,12 +62,11 @@ void	conv_str(t_stream *out, t_fmt *f, va_list ap)
 		else
 			s = "(null)";
 	}
+	view.start = s;
 	if (f->has_precision && f->precision >= 0)
-		value_len = ft_min(ft_strlen(s), f->precision);
+		view.length = ft_min(ft_strlen(s), f->precision);
 	else
-		value_len = ft_strlen(s);
-	pad_len = ft_max(0, f->min_width - value_len);
-	pf_repeat(f->padchar, !f->left_align * pad_len, out);
-	pf_nputs(s, value_len, out);
-	pf_repeat(f->padchar, f->left_align * pad_len, out);
+		view.length = ft_strlen(s);
+	pad_len = f->min_width - view.length;
+	put_sv_padded(view, pad_len, f->align, out);
 }

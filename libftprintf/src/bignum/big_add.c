@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/08/06 19:35:29 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/10 08:52:55 by debby            ###   ########.fr       */
+/*   Updated: 2021/02/24 09:45:23 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,6 @@ t_big	big_add(t_big a, t_big b)
 	{
 		tmp = a.val[i] + b.val[i];
 		add_with_carry_internal(&res, i, tmp);
-		if (res.overflow_occured)
-			return (res);
 		i++;
 	}
 	return (res);
