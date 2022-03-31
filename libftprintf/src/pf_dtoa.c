@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 04:49:33 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/03/26 00:42:12 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/31 15:46:53 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -156,6 +156,11 @@ void	pf_dtoa(t_stream *out, long double nb, const t_fmt *fmt)
 		pow5 = big_raise(5, -dec_pow);
 		big = big_mul(big_from_number(mantissa), pow5);
 		big = big_mul(big, big_raise(2, exponent));
+		if (big.overflow_occured)
+		{
+			put_sv(sv_from_cstr("bignum overflow!"), out);
+			return ;
+		}
 		digits = big_str(buf, big);
 		digits = digits_round(digits, ft_strlen(digits) + dec_pow, fmt->precision);
 	}

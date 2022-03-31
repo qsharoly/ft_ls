@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/08/06 19:40:23 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/02/24 09:53:35 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/31 15:17:19 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ void	add_with_carry_internal(t_big *res, int at_index, t_digit_tmp carry)
 	{
 		if (at_index >= BIG_N_DIGITS)
 		{
-			ft_putstr_fd(2, "bignum overflow!\n");
+			res->overflow_occured = 1;
 			return ;
 		}
 		sum = res->val[at_index] + carry;
@@ -49,6 +49,8 @@ t_big	big_mul(t_big a, t_big b)
 		{
 			tmp = a.val[i] * b.val[j];
 			add_with_carry_internal(&res, i + j, tmp);
+			if (res.overflow_occured)
+				return (res);
 			i++;
 		}
 		j++;

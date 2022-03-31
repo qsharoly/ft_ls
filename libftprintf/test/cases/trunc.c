@@ -7,14 +7,14 @@
 int	check_double(double d)
 {
 	static int runs;
-	double	actual = ft_trunc(d);
+	double	actual = fp_trunc(d);
 	double	expect = trunc(d);
 
 	runs += 1;
 	if (actual != expect)
 	{
 		printf("%d: failed at %f\n", runs, d);
-		printf("ft_trunc -> %f\n   trunc -> %f\n",
+		printf("fp_trunc -> %f\n   trunc -> %f\n",
 				actual, expect);
 	}
 	return (actual == expect);
@@ -23,14 +23,14 @@ int	check_double(double d)
 int	check_long_double(long double d)
 {
 	static int runs;
-	long double	actual = ft_trunc(d);
+	long double	actual = fp_trunc(d);
 	long double	expect = trunc(d);
 
 	runs += 1;
 	if (actual != expect)
 	{
 		printf("%d: failed at %Lf\n", runs, d);
-		printf("ft_trunc -> %Lf\n   trunc -> %Lf\n",
+		printf("fp_trunc -> %Lf\n   trunc -> %Lf\n",
 				actual, expect);
 	}
 	return (actual == expect);

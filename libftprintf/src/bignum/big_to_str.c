@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 04:10:05 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/03/26 22:56:47 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/31 15:38:15 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,8 @@ char	*big_str(char buf[BIG_MAX_CHARS + 1], t_big a)
 	int		i;
 	int		must_fill;
 
+	if (a.overflow_occured)
+		return ("bignum overflow!");
 	pos = &buf[BIG_MAX_CHARS];
 	*pos = '\0';
 	pos--;

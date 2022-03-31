@@ -9,7 +9,7 @@ static void	big_print_bits(t_big a)
 	chunk_idx = BIG_N_DIGITS - 1;
 	while (chunk_idx >= 0)
 	{
-		print_bits(&(a.val[chunk_idx]), BIG_DIGIT_CHARS * 8);
+		print_bits(&(a.val[chunk_idx]), BIG_CHARS_PER_DIGIT * 8);
 		printf(" ");
 		chunk_idx--;
 	}

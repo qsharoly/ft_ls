@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 04:19:11 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/03/26 22:59:15 by debby            ###   ########.fr       */
+/*   Updated: 2022/03/31 15:12:56 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,8 @@ typedef long long		t_digit_tmp;
 typedef	struct			s_big
 {
 	t_digit	val[BIG_N_DIGITS];
-	int		used;
+	short int	used;
+	short int	overflow_occured:1;
 }						t_big;
 
 t_big					big_zero(void);
