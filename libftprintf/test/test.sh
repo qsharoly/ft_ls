@@ -1,8 +1,9 @@
 if [[ $1 ]]; then
 	EXECUTABLE="test/bin/$1.out"
 	SOURCE="test/cases/$1.c"
+	LFT_DIR=${LFT_DIR:-libft}
 	rm $EXECUTABLE
-	gcc -g $SOURCE -Iincludes -I../libft/includes -L. -L.. -lm -lftprintf -o $EXECUTABLE
+	gcc -g $SOURCE -Iincludes -I$LFT_DIR/includes -L. -lm -lftprintf -o $EXECUTABLE
 	if [[ $2 == "--norun" ]]; then
 		exit
 	fi
