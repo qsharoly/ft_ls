@@ -11,12 +11,15 @@ if [[ $1 ]]; then
 		exit
 	fi
 	if [[ $1 == "fp_speed" ]]; then
+		if (( $# > 1 )); then
+			OPTIONS="-iter $2"
+		fi
 		echo "=== dtoa speed ==="
 		echo "libc printf:"
-		time ./$EXECUTABLE -libc 1>/dev/null
+		time ./$EXECUTABLE -libc $OPTIONS 1>/dev/null
 		echo
 		echo "ft_printf:"
-		time ./$EXECUTABLE 1>/dev/null
+		time ./$EXECUTABLE $OPTIONS 1>/dev/null
 	else
 		./$EXECUTABLE
 	fi
