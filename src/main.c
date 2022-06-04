@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/03/30 19:44:27 by debby            ###   ########.fr       */
+/*   Updated: 2022/06/04 17:58:40 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -182,11 +182,7 @@ int		mtime(const void *l, const void *r)
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
 	diff = right->status->st_mtime - left->status->st_mtime;
-	if (diff == 0)
-	{
-		return (alpha(l, r));
-	}
-	return (diff);
+	return (diff || alpha(l, r));
 }
 
 int		mtime_reverse(const void *l, const void *r)
@@ -198,11 +194,7 @@ int		mtime_reverse(const void *l, const void *r)
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
 	diff = left->status->st_mtime - right->status->st_mtime;
-	if (diff == 0)
-	{
-		return (alpha_reverse(l, r));
-	}
-	return (diff);
+	return (diff || alpha_reverse(l, r));
 }
 
 size_t	n_digits(size_t val)
