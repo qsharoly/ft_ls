@@ -1,24 +1,24 @@
 #include <stdlib.h>
 #include "ft_ls.h"
 
-//#define DEBUGLOG
+#if DEBUGLOG
+	#include <stdio.h>
 
-#ifdef DEBUGLOG
-#include <stdio.h>
-#endif
-__attribute__((__format__(__printf__, 1, 2)))
-static void	dbglog(const char *format, ...)
-{
-#ifdef DEBUGLOG
-	va_list	ap;
+	__attribute__((__format__(__printf__, 1, 2)))
+	static void	dbglog(const char *format, ...)
+	{
+		va_list	ap;
 
-	va_start(ap, format);
-	vprintf(format, ap);
-	va_end(ap);
+		va_start(ap, format);
+		vprintf(format, ap);
+		va_end(ap);
+	}
 #else
-	(void)format;
-#endif
-}
+	static void dbglog(const char *format, ...)
+	{
+		(void)format;
+	}
+#endif //DEBUGLOG
 
 static inline int min(int a, int b)
 {
