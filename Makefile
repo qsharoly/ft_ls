@@ -14,17 +14,15 @@ SRC := src/main.c\
 include libft/module
 include libftprintf/module
 
-debug = yes
-ifeq ($(debug), yes)
-	CFLAGS +=-g
-endif
+debug ?= -g
+optimize ?= -O2
 
 .phony: all clean fclean re
 
 all:  $(NAME)
 
 $(NAME): $(SRC) includes/*.h libft/includes/*.h libftprintf/includes/*.h
-	$(CC) $(CFLAGS) -o $@ $(SRC) $(LIBS)
+	$(CC) $(debug) $(optimize) $(CFLAGS) -o $@ $(SRC) $(LIBS)
 
 clean:
 fclean: clean
