@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/06/04 17:58:40 by debby            ###   ########.fr       */
+/*   Updated: 2022/09/15 08:24:41 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,17 +120,20 @@ char	*patcat(const char *path, const char *name)
 	int		pathlen;
 
 	pathlen = ft_strlen(path);
+	// path + slash + name + null-terminator
 	str = malloc(pathlen + 1 + ft_strlen(name) + 1);
 	if (!str)
 	{
 		panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
 	}
 	ft_strcpy(str, path);
+	// remove all trailing slashes
 	while (pathlen > 0 && str[pathlen - 1] == '/')
 	{
 		str[pathlen - 1] = '\0';
 		pathlen--;
 	}
+	// add a single slash
 	str[pathlen++] = '/';
 	ft_strcpy(str + pathlen, name);
 	return (str);
@@ -258,11 +261,29 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	{
 		hm_or_yy = hh_mm;
 	}
-	ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %s", perms, w.nlink - 1, nlink, w.owner, f->owner, w.group, f->group, w.size - 1, fsize, mmm_dd, hm_or_yy, f->name);
 	if (S_ISLNK(mode))
-		ft_printf(" -> %.*s\n", f->linklen, f->linkbuf);
+	{
+		ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %s -> %.*s\n",
+				perms,
+				w.nlink - 1, nlink,
+				w.owner, f->owner,
+				w.group, f->group,
+				w.size - 1, fsize,
+				mmm_dd, hm_or_yy,
+				f->name,
+				f->linklen, f->linkbuf);
+	}
 	else
-		ft_printf("\n");
+	{
+		ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %s\n",
+				perms,
+				w.nlink - 1, nlink,
+				w.owner, f->owner,
+				w.group, f->group,
+				w.size - 1, fsize,
+				mmm_dd, hm_or_yy,
+				f->name);
+	}
 }
 
 static int	get_termwidth(void)
