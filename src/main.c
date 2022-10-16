@@ -450,7 +450,14 @@ struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
 	}
 	if (options.detailed_mode)
 	{
-		info->linklen = readlinkat(dirfd, filename, info->linkbuf, 256);
+		if (S_ISLNK(info->status->st_mode))
+		{
+			info->linklen = readlinkat(dirfd, filename, info->linkbuf, 256);
+		}
+		else
+		{
+			info->linklen = 0;
+		}
 		add_owner_and_group(info);
 		update_detail_meta(detail_meta, info);
 	}
