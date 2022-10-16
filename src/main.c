@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/09/15 10:42:29 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/16 22:54:15 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,19 @@
 static bool	g_had_minor_errors = false;
 const char	*g_program_name = "ft_ls"; //initialize to default name
 int	(*g_compare)(const void *left, const void *right);
+
+#define TABLE_SIZE 1024 //must be power of 2 for calc_hash to work
+int calc_hash(int key)
+{
+	return abs(key) & (TABLE_SIZE-1);
+}
+
+struct hashNode
+{
+	int key;
+	char *value;
+	struct hashNode *next;
+};
 
 static void	print_help()
 {
@@ -304,31 +317,87 @@ static int	get_termwidth(void)
 	return winsize.ws_col;
 }
 
+void ht_insert(struct hashNode **table, int key, char *value)
+{
+	int hash = calc_hash(key);
+	if (table[hash] == NULL)
+	{
+		struct hashNode *new_node = malloc(sizeof(struct hashNode));
+		*new_node = (struct hashNode){key, value, NULL};
+		table[hash] = new_node;
+		return;
+	}
+	struct hashNode *node = table[hash];
+	while (1)
+	{
+		if (node->key == key)
+		{
+			node->value = value;
+			return;
+		}
+		if (node->next == NULL)
+		{
+			struct hashNode *new_node = malloc(sizeof(struct hashNode));
+			*new_node = (struct hashNode){key, value, NULL};
+			node->next = new_node;
+			return;
+		}
+		node = node->next;
+	}
+}
+
+char *ht_search(struct hashNode **table, int key)
+{
+	struct hashNode *node = table[calc_hash(key)];
+	while (node)
+	{
+		if (node->key == key)
+		{
+			return node->value;
+		}
+		node = node->next;
+	}
+	return NULL;
+}
+
 static void add_owner_and_group(struct s_finfo *info)
 {
-	struct passwd	*tmp_passwd;
-	struct group	*tmp_group;
+	static struct hashNode *owners[TABLE_SIZE];
+	static struct hashNode *groups[TABLE_SIZE];
 
-	tmp_passwd = getpwuid(info->status->st_uid);
-	if (!tmp_passwd)
+	char *owner_name = ht_search(owners, info->status->st_uid);
+	char *group_name = ht_search(groups, info->status->st_gid);
+
+	if (!owner_name)
 	{
-		panic(Fail_serious, "%s: unable to get owner's name: %s\n", g_program_name, strerror(errno));
+		struct passwd *my_passwd = getpwuid(info->status->st_uid);
+		if (!my_passwd)
+		{
+			panic(Fail_serious, "can't get owner's name: %s\n", strerror(errno));
+		}
+		owner_name = ft_strdup(my_passwd->pw_name);
+		if (!owner_name)
+		{
+			panic(Fail_serious, "malloc failed: %s\n", strerror(errno));
+		}
+		ht_insert(owners, info->status->st_uid, owner_name);
 	}
-	info->owner = ft_strdup(tmp_passwd->pw_name);
-	if (!info->owner)
+	if (!group_name)
 	{
-		panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
+		struct group *my_group = getgrgid(info->status->st_gid);
+		if (!my_group)
+		{
+			panic(Fail_serious, "can't get group's name: %s\n", strerror(errno));
+		}
+		group_name = ft_strdup(my_group->gr_name);
+		if (!group_name)
+		{
+			panic(Fail_serious, "malloc failed: %s\n", strerror(errno));
+		}
+		ht_insert(groups, info->status->st_gid, group_name);
 	}
-	tmp_group = getgrgid(info->status->st_gid);
-	if (!tmp_group)
-	{
-		panic(Fail_serious, "%s: unable to get groupname: %s\n", g_program_name, strerror(errno));
-	}
-	info->group = ft_strdup(tmp_group->gr_name);
-	if (!info->group)
-	{
-		panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
-	}
+	info->owner = owner_name;
+	info->group = group_name;
 }
 
 static void update_detail_meta(struct s_meta *meta, struct s_finfo *info)
@@ -348,8 +417,6 @@ void	destroy_infos(struct s_finfo **infos, int info_count)
 	{
 		free(infos[i]->name);
 		free(infos[i]->status);
-		free(infos[i]->owner);
-		free(infos[i]->group);
 		free(infos[i]);
 		i++;
 	}
