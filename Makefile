@@ -1,7 +1,10 @@
 NAME ?= ft_ls
 
 CC ?= clang
+debug ?= -g
+optimize ?= -O2
 
+CFLAGS += $(debug) $(optimize)
 CFLAGS +=-Iincludes -Ilibft/includes -Ilibftprintf/includes
 CFLAGS +=-Wall -Wextra -Werror
 
@@ -12,15 +15,12 @@ SRC := src/main.c\
 include libft/module
 include libftprintf/module
 
-debug ?= -g
-optimize ?= -O2
-
 .phony: all clean fclean re
 
 all:  $(NAME)
 
 $(NAME): $(SRC) includes/*.h libft/includes/*.h libftprintf/includes/*.h
-	$(CC) $(debug) $(optimize) $(CFLAGS) -o $@ $(SRC) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $(SRC) $(LIBS)
 
 clean:
 fclean: clean
