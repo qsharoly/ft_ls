@@ -19,7 +19,7 @@ include libftprintf/module
 
 all:  $(NAME)
 
-$(NAME): $(SRC) includes/*.h libft/includes/*.h libftprintf/includes/*.h
+$(NAME): $(SRC) src/*.h libft/includes/*.h libftprintf/includes/*.h
 	$(CC) $(CFLAGS) -o $@ $(SRC) $(LIBS)
 
 clean:
