@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/10/16 22:54:15 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/17 21:34:31 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -591,9 +591,9 @@ void	list_initial_paths(const char **paths, int path_count, t_options options)
 			ft_printf("%s:\n", dirs[i]->name);
 			had_printed = true;
 		}
-		char path_buffer[PATH_MAX] = {};
-		ft_strcpy(path_buffer, dirs[i]->name);
-		list_directory(path_buffer, STARTING_DEPTH + 1, options);
+		char current_path[PATH_MAX] = {};
+		ft_strcpy(current_path, dirs[i]->name);
+		list_directory(current_path, STARTING_DEPTH + 1, options);
 		i++;
 	}
 
@@ -601,14 +601,14 @@ void	list_initial_paths(const char **paths, int path_count, t_options options)
 	destroy_infos(dirs, dir_count);
 }
 
-void	list_directory(char *path_buffer, int depth, t_options options)
+void	list_directory(char *current_path, int depth, t_options options)
 {
 	struct s_finfo	*infos[MAX_BREADTH];
 	int				info_count;
 	struct s_meta	detail_meta = {0};
 
 	// read files from directory
-	const char		*dir_name = path_buffer;
+	const char		*dir_name = current_path;
 	DIR				*dir;
 	struct dirent	*entry;
 	if (depth >= MAX_DEPTH)
@@ -664,13 +664,13 @@ void	list_directory(char *path_buffer, int depth, t_options options)
 					&& !ft_strequ(infos[i]->name, ".")
 					&& !ft_strequ(infos[i]->name, ".."))
 			{
-				path_push(path_buffer, infos[i]->name);
+				path_push(current_path, infos[i]->name);
 				if (had_printed)
 					ft_printf("\n");
-				ft_printf("%s:\n", path_buffer);
+				ft_printf("%s:\n", current_path);
 				had_printed = true;
-				list_directory(path_buffer, depth + 1, options);
-				path_pop(path_buffer);
+				list_directory(current_path, depth + 1, options);
+				path_pop(current_path);
 			}
 			i++;
 		}
