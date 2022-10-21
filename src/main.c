@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/10/17 21:34:31 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 00:11:22 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -82,6 +82,11 @@ static bool	parse_as_option(const char *str, t_options *options)
 		{
 			print_help();
 			exit(Success);
+		}
+		else if (ft_strequ(str, "--mem"))
+		{
+			(*options).mem_usage = true;
+			return true;
 		}
 		else
 		{
@@ -166,8 +171,8 @@ int		alpha(const void *l, const void *r)
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	lname = left->name;
-	rname = right->name;
+	lname = left->name.start;
+	rname = right->name.start;
 	if (lname[0] == '.')
 		lname++;
 	if (rname[0] == '.')
@@ -184,8 +189,8 @@ int		alpha_reverse(const void *l, const void *r)
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	lname = left->name;
-	rname = right->name;
+	lname = left->name.start;
+	rname = right->name.start;
 	if (lname[0] == '.')
 		lname++;
 	if (rname[0] == '.')
@@ -202,7 +207,7 @@ int		mtime(const void *l, const void *r)
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	diff = right->status->st_mtime - left->status->st_mtime;
+	diff = right->status.st_mtime - left->status.st_mtime;
 	return (diff || alpha(l, r));
 }
 
@@ -214,7 +219,7 @@ int		mtime_reverse(const void *l, const void *r)
 
 	left = *(struct s_finfo **)l;
 	right = *(struct s_finfo **)r;
-	diff = left->status->st_mtime - right->status->st_mtime;
+	diff = left->status.st_mtime - right->status.st_mtime;
 	return (diff || alpha_reverse(l, r));
 }
 
@@ -236,7 +241,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	mode_t	mode;
 	char	perms[11];
 
-	mode = f->status->st_mode;
+	mode = f->status.st_mode;
 	perms[0] = '?';
 	if (S_ISREG(mode))
 		perms[0] = '-';
@@ -262,16 +267,16 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	perms[8] = mode & S_IWOTH ? 'w' : '-';
 	perms[9] = mode & S_IXOTH ? 'x' : '-';
 	perms[10] = '\0';
-	size_t nlink = f->status->st_nlink;
-	size_t fsize = f->status->st_size;
-	char *mtime = ctime(&(f->status->st_mtime));
+	size_t nlink = f->status.st_nlink;
+	size_t fsize = f->status.st_size;
+	char *mtime = ctime(&(f->status.st_mtime));
 	char *mmm_dd = ft_strchr(mtime, ' ') + 1;
 	char *hh_mm = &mtime[11];
 	char *_yyyy = &mtime[19];
 	char *hm_or_yy;
 	time_t now = time(NULL);
 #define SIX_MONTHS_AS_SECONDS 15778476
-	if (now < f->status->st_mtime || now - f->status->st_mtime > SIX_MONTHS_AS_SECONDS)
+	if (now < f->status.st_mtime || now - f->status.st_mtime > SIX_MONTHS_AS_SECONDS)
 	{
 		hm_or_yy = _yyyy;
 	}
@@ -288,7 +293,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 				w.group, f->group,
 				w.size - 1, fsize,
 				mmm_dd, hm_or_yy,
-				f->name,
+				f->name.start,
 				f->linklen, f->linkbuf);
 	}
 	else
@@ -300,7 +305,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 				w.group, f->group,
 				w.size - 1, fsize,
 				mmm_dd, hm_or_yy,
-				f->name);
+				f->name.start);
 	}
 }
 
@@ -365,12 +370,12 @@ static void add_owner_and_group(struct s_finfo *info)
 	static struct hashNode *owners[TABLE_SIZE];
 	static struct hashNode *groups[TABLE_SIZE];
 
-	char *owner_name = ht_search(owners, info->status->st_uid);
-	char *group_name = ht_search(groups, info->status->st_gid);
+	char *owner_name = ht_search(owners, info->status.st_uid);
+	char *group_name = ht_search(groups, info->status.st_gid);
 
 	if (!owner_name)
 	{
-		struct passwd *my_passwd = getpwuid(info->status->st_uid);
+		struct passwd *my_passwd = getpwuid(info->status.st_uid);
 		if (!my_passwd)
 		{
 			panic(Fail_serious, "can't get owner's name: %s\n", strerror(errno));
@@ -380,11 +385,11 @@ static void add_owner_and_group(struct s_finfo *info)
 		{
 			panic(Fail_serious, "malloc failed: %s\n", strerror(errno));
 		}
-		ht_insert(owners, info->status->st_uid, owner_name);
+		ht_insert(owners, info->status.st_uid, owner_name);
 	}
 	if (!group_name)
 	{
-		struct group *my_group = getgrgid(info->status->st_gid);
+		struct group *my_group = getgrgid(info->status.st_gid);
 		if (!my_group)
 		{
 			panic(Fail_serious, "can't get group's name: %s\n", strerror(errno));
@@ -394,7 +399,7 @@ static void add_owner_and_group(struct s_finfo *info)
 		{
 			panic(Fail_serious, "malloc failed: %s\n", strerror(errno));
 		}
-		ht_insert(groups, info->status->st_gid, group_name);
+		ht_insert(groups, info->status.st_gid, group_name);
 	}
 	info->owner = owner_name;
 	info->group = group_name;
@@ -402,24 +407,12 @@ static void add_owner_and_group(struct s_finfo *info)
 
 static void update_detail_meta(struct s_meta *meta, struct s_finfo *info)
 {
-	meta->total_blocks += info->status->st_blocks;
-	meta->w.nlink = ft_max(meta->w.nlink, n_digits(info->status->st_nlink));
-	meta->w.size = ft_max(meta->w.size, n_digits(info->status->st_size));
+	meta->total_blocks += info->status.st_blocks;
+	meta->w.nlink = ft_max(meta->w.nlink, n_digits(info->status.st_nlink));
+	meta->w.size = ft_max(meta->w.size, n_digits(info->status.st_size));
 	meta->w.owner = ft_max(meta->w.owner, ft_strlen(info->owner));
 	meta->w.group = ft_max(meta->w.group, ft_strlen(info->group));
-	meta->w.name = ft_max(meta->w.name, ft_strlen(info->name));
-}
-
-void	destroy_infos(struct s_finfo **infos, int info_count)
-{
-	int i = 0;
-	while (i < info_count)
-	{
-		free(infos[i]->name);
-		free(infos[i]->status);
-		free(infos[i]);
-		i++;
-	}
+	meta->w.name = ft_max(meta->w.name, info->name.length);
 }
 
 bool	print_informations(struct s_finfo **items, int item_count, t_options options, struct s_width detail_meta_w)
@@ -443,7 +436,7 @@ bool	print_informations(struct s_finfo **items, int item_count, t_options option
 		int i = 0;
 		while (i < item_count)
 		{
-			ft_printf("%s\n", items[i]->name);
+			ft_printf("%s\n", items[i]->name.start);
 			i++;
 			had_printed = true;
 		}
@@ -467,9 +460,9 @@ bool	print_informations(struct s_finfo **items, int item_count, t_options option
 			while (idx < item_count)
 			{
 				if (idx + stride < item_count)
-					ft_printf("%-*s%s", column_widths[col], items[idx]->name, separator); 
+					ft_printf("%-*s%s", column_widths[col], items[idx]->name.start, separator); 
 				else
-					ft_printf("%s\n", items[idx]->name);
+					ft_printf("%s\n", items[idx]->name.start);
 				col++;
 				idx += stride;
 				had_printed = true;
@@ -482,42 +475,21 @@ bool	print_informations(struct s_finfo **items, int item_count, t_options option
 	return had_printed;
 }
 
-struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
-				int dirfd, const char *dir_path, t_options options, int statflags)
+int get_file_info(struct s_finfo *info, const char *filename, struct s_meta *detail_meta,
+				int dirfd, t_options options, int statflags)
 {
-	struct s_finfo	*info;
 	int ok;
 
-	info = ft_calloc(1, sizeof(*info));
-	if (!info)
+	ok = fstatat(dirfd, filename, &info->status, statflags);
+	if (ok == -1)
 	{
-		panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
-	}
-	info->name = ft_strdup(filename);
-	info->namelen = ft_strlen(filename);
-	//dir_path == NULL means we are called from list_initial_files
-	if (options.detailed_mode || options.sort_by_mtime || dir_path == NULL)
-	{
-		struct stat	*status = malloc(sizeof(*status));
-		if (!status)
-		{
-			panic(Fail_serious, "%s: allocation failed: %s\n", g_program_name, strerror(errno));
-		}
-		ok = fstatat(dirfd, filename, status, statflags);
-		if (ok == -1)
-		{
-			ft_dprintf(STDERR, "%s: cannot access '%s/%s': %s\n", g_program_name, dir_path, filename, strerror(errno));
-			free(status);
-			free(info->name);
-			free(info);
-			g_had_minor_errors = true;
-			return NULL;
-		}
-		info->status = status;
+		ft_dprintf(STDERR, "%s: cannot access '%s': %s\n", g_program_name, filename, strerror(errno));
+		g_had_minor_errors = true;
+		return Fail_minor;
 	}
 	if (options.detailed_mode)
 	{
-		if (S_ISLNK(info->status->st_mode))
+		if (S_ISLNK(info->status.st_mode))
 		{
 			info->linklen = readlinkat(dirfd, filename, info->linkbuf, 256);
 		}
@@ -528,10 +500,90 @@ struct s_finfo *get_file_info(const char *filename, struct s_meta *detail_meta,
 		add_owner_and_group(info);
 		update_detail_meta(detail_meta, info);
 	}
-	return info;
+	return Success;
 }
 
-void	list_initial_paths(const char **paths, int path_count, t_options options)
+void ft_memcopy(char *dest, const char *src, int size)
+{
+	for (int i = 0; i < size; ++i)
+	{
+		dest[i] = src[i];
+	}
+}
+
+t_arena make_arena(int capacity, int *success)
+{
+	t_arena arena = {0};
+
+	arena.memory = malloc(capacity);
+	arena.capacity = capacity;
+	*success = (arena.memory != 0);
+	return arena;
+}
+
+void *arena_allocate_bytes(t_arena *arena, int size, int *success)
+{
+	if (arena->offset + size > arena->capacity)
+	{
+		*success = 0;
+		return NULL;
+	}
+	void *start = arena->memory + arena->offset;
+	arena->offset += size;
+	*success = 1;
+
+	if (arena->offset > arena->max_offset)
+		arena->max_offset = arena->offset;
+
+	return start;
+}
+
+t_sv arena_push_cstring_with_terminating_0(t_arena *arena, const char *cstring, int *success)
+{
+	int size = ft_strlen(cstring) + 1;
+	if (arena->offset + size > arena->capacity) {
+		*success = 0;
+		return (t_sv){0};
+	}
+	ft_memcopy(arena->memory + arena->offset, cstring, size);
+	t_sv view = (t_sv){
+		.start = arena->memory + arena->offset,
+		.length = size - 1
+	};
+	arena->offset += size;
+	*success = 1;
+
+	if (arena->offset > arena->max_offset)
+		arena->max_offset = arena->offset;
+
+	return view;
+}
+
+/*
+t_sv arena_push_cstring(t_arena *arena, const char *cstring, int *success)
+{
+	int length = ft_strlen(cstring);
+	if (arena->offset + length > arena->capacity) {
+		*success = 0;
+		return (t_sv){0};
+	}
+	ft_memcopy(arena->memory + arena->offset, cstring, length);
+	t_sv view = (t_sv){
+		.start = arena->memory + arena->offset,
+		.length = length
+	};
+	arena->offset += length;
+	*success = 1;
+
+	if (arena->offset > arena->offset_max)
+		arena->offset_max = arena->offset;
+
+	return view;
+}
+*/
+
+void	list_initial_paths(const char **paths, int path_count, t_options options,
+		t_arena *names_arena, t_arena *infos_arena)
 {
 	struct s_finfo	*nondirs[MAX_BREADTH];
 	struct s_finfo	*dirs[MAX_BREADTH];
@@ -547,19 +599,22 @@ void	list_initial_paths(const char **paths, int path_count, t_options options)
 	i = 0;
 	while (i < path_count)
 	{
-		struct s_finfo	*new_info;
+		int success;
+		struct s_finfo	*new_info = arena_allocate_bytes(infos_arena, sizeof(*new_info), &success);
+		new_info->name.start = paths[i]; //TODO
+		new_info->name.length = ft_strlen(paths[i]);
 		//in detailed mode print info about links themselves
 		if (options.detailed_mode)
-			new_info = get_file_info(paths[i], &detail_meta, AT_FDCWD, NULL, options, AT_SYMLINK_NOFOLLOW);
+			get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, AT_SYMLINK_NOFOLLOW);
 		else
-			new_info = get_file_info(paths[i], &detail_meta, AT_FDCWD, NULL, options, 0);
+			get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, 0);
 		if (!new_info)
 		{
 			g_had_minor_errors = true;
 			i++;
 			continue;
 		}
-		if (S_ISDIR(new_info->status->st_mode))
+		if (S_ISDIR(new_info->status.st_mode))
 			dirs[dir_count++] = new_info;
 		else
 			nondirs[nondir_count++] = new_info;
@@ -579,7 +634,7 @@ void	list_initial_paths(const char **paths, int path_count, t_options options)
 	while (i < dir_count)
 	{
 		// don't go into links
-		if (S_ISLNK(dirs[i]->status->st_mode))
+		if (S_ISLNK(dirs[i]->status.st_mode))
 		{
 			i++;
 			continue;
@@ -588,95 +643,127 @@ void	list_initial_paths(const char **paths, int path_count, t_options options)
 		{
 			if (had_printed)
 				ft_printf("\n");
-			ft_printf("%s:\n", dirs[i]->name);
+			ft_printf("%s:\n", dirs[i]->name.start);
 			had_printed = true;
 		}
 		char current_path[PATH_MAX] = {};
-		ft_strcpy(current_path, dirs[i]->name);
-		list_directory(current_path, STARTING_DEPTH + 1, options);
+		ft_strcpy(current_path, dirs[i]->name.start);
+		list_directory(current_path, STARTING_DEPTH + 1, options, names_arena, infos_arena);
 		i++;
 	}
-
-	destroy_infos(nondirs, nondir_count);
-	destroy_infos(dirs, dir_count);
 }
 
-void	list_directory(char *current_path, int depth, t_options options)
+void	list_directory(char *current_path, int depth, t_options options,
+		t_arena *names_arena, t_arena *infos_arena)
 {
-	struct s_finfo	*infos[MAX_BREADTH];
-	int				info_count;
-	struct s_meta	detail_meta = {0};
-
-	// read files from directory
-	const char		*dir_name = current_path;
 	DIR				*dir;
-	struct dirent	*entry;
 	if (depth >= MAX_DEPTH)
 	{
-		panic(Fail_serious, "%s: can't list '%s': reached max directory depth.\n", g_program_name, dir_name);
+		panic(Fail_serious, "%s: can't list '%s': reached max directory depth.\n", g_program_name, current_path);
 	}
-	dir = opendir(dir_name);
+	dir = opendir(current_path);
 	if (!dir)
 	{
-		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s\n", g_program_name, dir_name, strerror(errno));
+		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s\n", g_program_name, current_path, strerror(errno));
 		g_had_minor_errors = true;
 		return;
 	}
-	info_count = 0;
+
+	//remember starting offsets of arenas
+	int names_arena_checkpoint = names_arena->offset;
+	int infos_arena_checkpoint = infos_arena->offset;
+	struct s_finfo	*infos[MAX_BREADTH];
+	int				entry_count = 0;
+	// read filenames
+	entry_count = 0;
+	struct dirent	*entry;
 	while ((entry = readdir(dir)))
 	{
-		if (info_count >= MAX_BREADTH)
+		if (entry_count >= MAX_BREADTH)
 		{
-			panic(Fail_serious, "%s: can't list '%s': reached max number of entries per directory.\n", g_program_name, dir_name);
+			panic(Fail_serious, "%s: can't list '%s': reached max number of entries per directory.\n", g_program_name, current_path);
 		}
 		//skip invisible files
 		if (entry->d_name[0] == '.' && !options.show_hidden_files)
 		{
 			continue;
 		}
-		struct s_finfo *new_info = get_file_info(entry->d_name, &detail_meta, dirfd(dir), dir_name, options, AT_SYMLINK_NOFOLLOW);
-		if (!new_info)
+		int success;
+		infos[entry_count] = arena_allocate_bytes(infos_arena, sizeof(struct s_finfo), &success);
+		if (!success)
 		{
-			continue;
+			ft_dprintf(STDERR, "'%s': can't list all entries: infos arena out of memory capacity\n", current_path);
+			ft_dprintf(STDERR, "memory = %p, capacity = %d, offset = %d\n",
+					infos_arena->memory,  infos_arena->capacity, infos_arena->offset);
+			g_had_minor_errors = true;
+			break;
 		}
-		new_info->is_dir = (entry->d_type == DT_DIR);
-		infos[info_count++] = new_info;
+		infos[entry_count]->name = arena_push_cstring_with_terminating_0(names_arena, entry->d_name, &success);
+		if (!success)
+		{
+			ft_dprintf(STDERR, "'%s': can't list all entries: names arena out of memory capacity\n", current_path);
+			g_had_minor_errors = true;
+			break;
+		}
+		infos[entry_count]->is_dir = (entry->d_type == DT_DIR);
+		entry_count++;
+	}
+
+	struct s_meta	detail_aggregates = {0};
+	if (options.detailed_mode || options.sort_by_mtime)
+	{
+		for (int i = 0; i < entry_count; ++i)
+		{
+			get_file_info(infos[i], infos[i]->name.start, &detail_aggregates, dirfd(dir), options, AT_SYMLINK_NOFOLLOW);
+		}
 	}
 	closedir(dir);
 
 	// sort
-	qsort(infos, info_count, sizeof(*infos), g_compare);
+	qsort(infos, entry_count, sizeof(*infos), g_compare);
 
 	// print
 	if (options.detailed_mode)
 	{
-		ft_printf("total %lu\n", detail_meta.total_blocks / BLOCK_HACK);
+		ft_printf("total %lu\n", detail_aggregates.total_blocks / BLOCK_HACK);
 	}
-	bool had_printed = print_informations(infos, info_count, options, detail_meta.w);
+	bool had_printed = print_informations(infos, entry_count, options, detail_aggregates.w);
 
-	// step into directories
+	t_sv	dir_names[MAX_BREADTH];
+	int		dir_names_count = 0;
+	// remember dir filenames after sorting
+	// so that we can release infos memory
+	// before stepping into directories
 	if (options.recursive)
 	{
-		int i = 0;
-		while (i < info_count)
+		for (int i = 0; i < entry_count; ++i)
 		{
 			if (infos[i]->is_dir
-					&& !ft_strequ(infos[i]->name, ".")
-					&& !ft_strequ(infos[i]->name, ".."))
+					&& !ft_strequ(infos[i]->name.start, ".")
+					&& !ft_strequ(infos[i]->name.start, ".."))
 			{
-				path_push(current_path, infos[i]->name);
-				if (had_printed)
-					ft_printf("\n");
-				ft_printf("%s:\n", current_path);
-				had_printed = true;
-				list_directory(current_path, depth + 1, options);
-				path_pop(current_path);
+				dir_names[dir_names_count++] = infos[i]->name;
 			}
-			i++;
 		}
 	}
+	// rollback infos memory
+	infos_arena->offset = infos_arena_checkpoint;
 
-	destroy_infos(infos, info_count);
+	// step into directories
+	for (int i = 0; i < dir_names_count; ++i)
+	{
+		{
+			path_push(current_path, dir_names[i].start);
+			if (had_printed)
+				ft_printf("\n");
+			ft_printf("%s:\n", current_path);
+			had_printed = true;
+			list_directory(current_path, depth + 1, options, names_arena, infos_arena);
+			path_pop(current_path);
+		}
+	}
+	// rollback names memory
+	names_arena->offset = names_arena_checkpoint;
 }
 
 int		main(int argc, const char **argv)
@@ -716,7 +803,24 @@ int		main(int argc, const char **argv)
 		paths[0] = ".";
 	}
 	g_compare = cmp_select[options.reverse_sort][options.sort_by_mtime];
-	list_initial_paths(paths, path_count, options);
+	int names_cap = 1024*1024/8;
+	int infos_cap = 1024*1024*2;
+	void *memory = malloc(names_cap + infos_cap);
+	if (!memory)
+	{
+		ft_dprintf(STDERR, "failed to allocate memory: %s", strerror(errno));
+		exit(Fail_serious);
+	}
+	t_arena	names_arena = (t_arena){.memory = memory, .capacity = names_cap};
+	t_arena infos_arena = (t_arena){.memory = memory + names_cap, .capacity = infos_cap};
+	list_initial_paths(paths, path_count, options, &names_arena, &infos_arena);
+	if (options.mem_usage)
+	{
+		ft_printf("max usage: names = %d/%d, infos = %d/%d\n",
+				names_arena.max_offset, names_arena.capacity,
+				infos_arena.max_offset, infos_arena.capacity);
+		ft_printf("(sum = %.2fK)\n", (names_arena.max_offset + infos_arena.max_offset)/1024.);
+	}
 	if (g_had_minor_errors)
 		return (Fail_minor);
 	return (Success);

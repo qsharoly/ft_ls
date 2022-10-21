@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2022/09/15 09:18:12 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 00:09:49 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include "sv.h"
 
 #define STARTING_DEPTH 0
 #define MAX_DEPTH 25
@@ -32,6 +33,7 @@ struct	s_options
 	bool	reverse_sort;
 	bool	sort_by_mtime;
 	bool	single_column;
+	bool	mem_usage;
 };
 
 enum e_exitcode
@@ -41,11 +43,18 @@ enum e_exitcode
 	Fail_serious = 2,
 };
 
+typedef struct
+{
+	int		capacity;
+	int		offset;
+	int		max_offset;
+	void	*memory;
+} t_arena;
+
 struct	s_finfo
 {
-	char		*name;
-	int			namelen;
-	struct stat	*status;
+	t_sv		name;
+	struct stat	status;
 	char		*owner;
 	char		*group;
 	char		linkbuf[256];
@@ -69,8 +78,7 @@ struct	s_meta
 
 int		columnize(int **column_widths, struct s_finfo **items, int item_count,
 			int separator_width, int width_limit);
-int		scan_directory(struct s_finfo **infos, const char *path,
-			struct s_meta *detail_meta, int depth, t_options options);
-void	list_directory(char *path_buffer, int depth, t_options options);
+void	list_directory(char *path_buffer, int depth, t_options options,
+		t_arena *names_arena, t_arena *infos_arena);
 
 #endif

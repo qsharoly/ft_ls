@@ -29,11 +29,11 @@ static int	max_width_between(struct s_finfo **items, int start, int stop)
 {
 	int	max_w;
 
-	max_w = items[start]->namelen;
+	max_w = items[start]->name.length;
 	for (int i = start + 1; i < stop; i++)
 	{
-		if (items[i]->namelen > max_w)
-			max_w = items[i]->namelen;
+		if (items[i]->name.length > max_w)
+			max_w = items[i]->name.length;
 	}
 	dbglog("items [%d, %d): ", start, stop);
 	dbglog("max_width: %d\n", max_w);
