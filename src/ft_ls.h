@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2022/10/22 00:09:49 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 01:54:25 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,8 +57,7 @@ struct	s_finfo
 	struct stat	status;
 	char		*owner;
 	char		*group;
-	char		linkbuf[256];
-	int			linklen;
+	t_sv		linkname;
 	bool		is_dir;
 };
 

@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/10/22 00:11:22 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 02:23:43 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -294,7 +294,7 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 				w.size - 1, fsize,
 				mmm_dd, hm_or_yy,
 				f->name.start,
-				f->linklen, f->linkbuf);
+				f->linkname.length, f->linkname.start);
 	}
 	else
 	{
@@ -475,34 +475,6 @@ bool	print_informations(struct s_finfo **items, int item_count, t_options option
 	return had_printed;
 }
 
-int get_file_info(struct s_finfo *info, const char *filename, struct s_meta *detail_meta,
-				int dirfd, t_options options, int statflags)
-{
-	int ok;
-
-	ok = fstatat(dirfd, filename, &info->status, statflags);
-	if (ok == -1)
-	{
-		ft_dprintf(STDERR, "%s: cannot access '%s': %s\n", g_program_name, filename, strerror(errno));
-		g_had_minor_errors = true;
-		return Fail_minor;
-	}
-	if (options.detailed_mode)
-	{
-		if (S_ISLNK(info->status.st_mode))
-		{
-			info->linklen = readlinkat(dirfd, filename, info->linkbuf, 256);
-		}
-		else
-		{
-			info->linklen = 0;
-		}
-		add_owner_and_group(info);
-		update_detail_meta(detail_meta, info);
-	}
-	return Success;
-}
-
 void ft_memcopy(char *dest, const char *src, int size)
 {
 	for (int i = 0; i < size; ++i)
@@ -511,6 +483,7 @@ void ft_memcopy(char *dest, const char *src, int size)
 	}
 }
 
+/*
 t_arena make_arena(int capacity, int *success)
 {
 	t_arena arena = {0};
@@ -520,6 +493,7 @@ t_arena make_arena(int capacity, int *success)
 	*success = (arena.memory != 0);
 	return arena;
 }
+*/
 
 void *arena_allocate_bytes(t_arena *arena, int size, int *success)
 {
@@ -559,28 +533,60 @@ t_sv arena_push_cstring_with_terminating_0(t_arena *arena, const char *cstring, 
 	return view;
 }
 
-/*
-t_sv arena_push_cstring(t_arena *arena, const char *cstring, int *success)
+t_sv arena_push_bytes(t_arena *arena, const char *source, int size, int *success)
 {
-	int length = ft_strlen(cstring);
-	if (arena->offset + length > arena->capacity) {
+	if (arena->offset + size > arena->capacity) {
 		*success = 0;
 		return (t_sv){0};
 	}
-	ft_memcopy(arena->memory + arena->offset, cstring, length);
+	ft_memcopy(arena->memory + arena->offset, source, size);
 	t_sv view = (t_sv){
 		.start = arena->memory + arena->offset,
-		.length = length
+		.length = size
 	};
-	arena->offset += length;
+	arena->offset += size;
 	*success = 1;
 
-	if (arena->offset > arena->offset_max)
-		arena->offset_max = arena->offset;
+	if (arena->offset > arena->max_offset)
+		arena->max_offset = arena->offset;
 
 	return view;
 }
-*/
+
+int get_file_info(struct s_finfo *info, const char *filename, struct s_meta *detail_meta,
+				int dirfd, t_options options, int statflags, t_arena *names_arena)
+{
+	int ok;
+
+	ok = fstatat(dirfd, filename, &info->status, statflags);
+	if (ok == -1)
+	{
+		ft_dprintf(STDERR, "%s: cannot access '%s': %s\n", g_program_name, filename, strerror(errno));
+		g_had_minor_errors = true;
+		return Fail_minor;
+	}
+	if (options.detailed_mode)
+	{
+		info->linkname = (t_sv){0};
+		if (S_ISLNK(info->status.st_mode))
+		{
+			char buffer[256];
+			int length = readlinkat(dirfd, filename, buffer, 256);
+			int success;
+			info->linkname = arena_push_bytes(names_arena, buffer, length, &success);
+			if (!success)
+			{
+				ft_dprintf(STDERR, "'%s': cannot push link name: names arena out of memory capacity\n", filename);
+				g_had_minor_errors = true;
+				return Fail_minor;
+
+			}
+		}
+		add_owner_and_group(info);
+		update_detail_meta(detail_meta, info);
+	}
+	return Success;
+}
 
 void	list_initial_paths(const char **paths, int path_count, t_options options,
 		t_arena *names_arena, t_arena *infos_arena)
@@ -605,9 +611,9 @@ void	list_initial_paths(const char **paths, int path_count, t_options options,
 		new_info->name.length = ft_strlen(paths[i]);
 		//in detailed mode print info about links themselves
 		if (options.detailed_mode)
-			get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, AT_SYMLINK_NOFOLLOW);
+			get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, AT_SYMLINK_NOFOLLOW, names_arena);
 		else
-			get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, 0);
+			get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, 0, names_arena);
 		if (!new_info)
 		{
 			g_had_minor_errors = true;
@@ -693,8 +699,6 @@ void	list_directory(char *current_path, int depth, t_options options,
 		if (!success)
 		{
 			ft_dprintf(STDERR, "'%s': can't list all entries: infos arena out of memory capacity\n", current_path);
-			ft_dprintf(STDERR, "memory = %p, capacity = %d, offset = %d\n",
-					infos_arena->memory,  infos_arena->capacity, infos_arena->offset);
 			g_had_minor_errors = true;
 			break;
 		}
@@ -714,7 +718,8 @@ void	list_directory(char *current_path, int depth, t_options options,
 	{
 		for (int i = 0; i < entry_count; ++i)
 		{
-			get_file_info(infos[i], infos[i]->name.start, &detail_aggregates, dirfd(dir), options, AT_SYMLINK_NOFOLLOW);
+			get_file_info(infos[i], infos[i]->name.start, &detail_aggregates,
+					dirfd(dir), options, AT_SYMLINK_NOFOLLOW, names_arena);
 		}
 	}
 	closedir(dir);
