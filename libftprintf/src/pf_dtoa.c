@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 04:49:33 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/03/31 15:46:53 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 14:02:11 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,12 +33,12 @@ static void	digits_put(t_sv digits, int split_offset, t_sv sign, const t_fmt *fm
 		ilen = ft_min(digits.length, split_offset);
 	pad_len = fmt->min_width - (sign.length + ilen + dot.length + ft_max(digits.length - split_offset, prec));
 	leading_zeros = 0;
-	if (fmt->align_right_by_leading_zeros && fmt->align == AlignRight)
+	if (fmt->align_right_by_leading_zeros && fmt->align == Align_right)
 	{
 		leading_zeros = pad_len;
 		pad_len = 0;
 	}
-	put_repeat(' ', (fmt->align == AlignRight) * pad_len, out);
+	put_repeat(' ', (fmt->align == Align_right) * pad_len, out);
 	put_sv(sign, out);
 	put_repeat('0', leading_zeros, out);
 	if (split_offset <= 0)
@@ -62,7 +62,7 @@ static void	digits_put(t_sv digits, int split_offset, t_sv sign, const t_fmt *fm
 			pf_putc(digits.start[i++], out);
 		put_repeat('0', prec, out);
 	}
-	put_repeat(' ', (fmt->align == AlignLeft) * pad_len, out);
+	put_repeat(' ', (fmt->align == Align_left) * pad_len, out);
 }
 
 char	*digits_round(char *digits, int split_offset, int precision)

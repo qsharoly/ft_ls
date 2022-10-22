@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 12:55:31 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/03/26 01:04:18 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 14:00:18 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ void	conv_ptr(t_stream *out, t_fmt *fmt, va_list ap)
 	if (!p)
 	{
 		value = sv_from_cstr("(nil)");
-		put_sv_padded(value, fmt->min_width - value.length, fmt->align, out);
+		put_sv_padded(value, fmt->min_width, fmt->align, out);
 		return ;
 	}
 	if (fmt->plus_mode == ExplicitPlus)

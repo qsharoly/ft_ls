@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 13:26:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/03/31 13:51:24 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 13:58:57 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 static void	(* const g_conv_table[256])(t_stream *, t_fmt *, va_list) = {
 	['%'] = conv_percent,
 	['c'] = conv_char,
-	['s'] = conv_str,
+	['s'] = conv_cstr,
 	['p'] = conv_ptr,
 	['d'] = conv_signed,
 	['i'] = conv_signed,
@@ -39,7 +39,7 @@ static const char	*parse_flags(const char *pos, t_fmt *fmt)
 		if (*pos == '0')
 			fmt->align_right_by_leading_zeros = 1;
 		else if (*pos == '-')
-			fmt->align = AlignLeft;
+			fmt->align = Align_left;
 		else if (*pos == '+')
 			fmt->plus_mode = ExplicitPlus;
 		else if (*pos == ' ' && fmt->plus_mode != ExplicitPlus)
@@ -90,7 +90,7 @@ static const char	*parse_min_width(const char *pos, t_fmt *fmt, va_list ap)
 		pos++;
 		nb = va_arg(ap, int);
 		if (nb < 0)
-			fmt->align = AlignLeft;
+			fmt->align = Align_left;
 		fmt->min_width = ft_abs(nb);
 	}
 	else
