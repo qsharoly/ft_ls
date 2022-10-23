@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/10/22 02:23:43 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/23 10:39:16 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -645,21 +645,16 @@ void	list_initial_paths(const char **paths, int path_count, t_options options,
 			i++;
 			continue;
 		}
-		if (options.recursive || path_count > 1)
-		{
-			if (had_printed)
-				ft_printf("\n");
-			ft_printf("%s:\n", dirs[i]->name.start);
-			had_printed = true;
-		}
+		bool should_announce = (options.recursive || path_count > 1);
 		char current_path[PATH_MAX] = {};
 		ft_strcpy(current_path, dirs[i]->name.start);
-		list_directory(current_path, STARTING_DEPTH + 1, options, names_arena, infos_arena);
+		list_directory(current_path, STARTING_DEPTH + 1, options, &had_printed, &should_announce, names_arena, infos_arena);
 		i++;
 	}
 }
 
 void	list_directory(char *current_path, int depth, t_options options,
+		bool *had_printed, bool *should_announce,
 		t_arena *names_arena, t_arena *infos_arena)
 {
 	DIR				*dir;
@@ -728,11 +723,19 @@ void	list_directory(char *current_path, int depth, t_options options,
 	qsort(infos, entry_count, sizeof(*infos), g_compare);
 
 	// print
+	if (*should_announce)
+	{
+		if (*had_printed)
+			ft_printf("\n");
+		ft_printf("%s:\n", current_path);
+		*had_printed = true;
+	}
+	*should_announce = true;
 	if (options.detailed_mode)
 	{
 		ft_printf("total %lu\n", detail_aggregates.total_blocks / BLOCK_HACK);
 	}
-	bool had_printed = print_informations(infos, entry_count, options, detail_aggregates.w);
+	*had_printed |= print_informations(infos, entry_count, options, detail_aggregates.w);
 
 	t_sv	dir_names[MAX_BREADTH];
 	int		dir_names_count = 0;
@@ -759,11 +762,7 @@ void	list_directory(char *current_path, int depth, t_options options,
 	{
 		{
 			path_push(current_path, dir_names[i].start);
-			if (had_printed)
-				ft_printf("\n");
-			ft_printf("%s:\n", current_path);
-			had_printed = true;
-			list_directory(current_path, depth + 1, options, names_arena, infos_arena);
+			list_directory(current_path, depth + 1, options, had_printed, should_announce, names_arena, infos_arena);
 			path_pop(current_path);
 		}
 	}

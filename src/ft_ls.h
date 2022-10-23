@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:50:12 by debby             #+#    #+#             */
-/*   Updated: 2022/10/22 01:54:25 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 16:26:39 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,6 +78,7 @@ struct	s_meta
 int		columnize(int **column_widths, struct s_finfo **items, int item_count,
 			int separator_width, int width_limit);
 void	list_directory(char *path_buffer, int depth, t_options options,
+		bool *had_printed, bool *should_announce,
 		t_arena *names_arena, t_arena *infos_arena);
 
 #endif
