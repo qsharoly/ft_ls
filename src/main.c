@@ -270,42 +270,43 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	size_t nlink = f->status.st_nlink;
 	size_t fsize = f->status.st_size;
 	char *mtime = ctime(&(f->status.st_mtime));
-	char *mmm_dd = ft_strchr(mtime, ' ') + 1;
+	char *mmm_dd_ = ft_strchr(mtime, ' ') + 1;
+	t_sv mmm_dd = (t_sv){mmm_dd_, 6};
 	char *hh_mm = &mtime[11];
 	char *_yyyy = &mtime[19];
-	char *hm_or_yy;
+	t_sv hm_or_yy;
 	time_t now = time(NULL);
 #define SIX_MONTHS_AS_SECONDS 15778476
 	if (now < f->status.st_mtime || now - f->status.st_mtime > SIX_MONTHS_AS_SECONDS)
 	{
-		hm_or_yy = _yyyy;
+		hm_or_yy = (t_sv){_yyyy, 5};
 	}
 	else
 	{
-		hm_or_yy = hh_mm;
+		hm_or_yy = (t_sv){hh_mm, 5};
 	}
 	if (S_ISLNK(mode))
 	{
-		ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %s -> %.*s\n",
+		ft_printf("%s %*lu %-*s %-*s %*lu %v %v %v -> %v\n",
 				perms,
 				w.nlink - 1, nlink,
 				w.owner, f->owner,
 				w.group, f->group,
 				w.size - 1, fsize,
 				mmm_dd, hm_or_yy,
-				f->name.start,
-				f->linkname.length, f->linkname.start);
+				f->name,
+				f->linkname);
 	}
 	else
 	{
-		ft_printf("%s %*lu %-*s %-*s %*lu %.6s %.5s %s\n",
+		ft_printf("%s %*lu %-*s %-*s %*lu %v %v %v\n",
 				perms,
 				w.nlink - 1, nlink,
 				w.owner, f->owner,
 				w.group, f->group,
 				w.size - 1, fsize,
 				mmm_dd, hm_or_yy,
-				f->name.start);
+				f->name);
 	}
 }
 

@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/01/14 15:31:58 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/10/22 14:03:55 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 15:45:11 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,5 +125,6 @@ void			conv_ptr(t_stream *out, t_fmt *fmt, va_list ap);
 void			conv_signed(t_stream *out, t_fmt *fmt, va_list ap);
 void			conv_unsigned(t_stream *out, t_fmt *fmt, va_list ap);
 void			conv_floating(t_stream *out, t_fmt *fmt, va_list ap);
+void			conv_sv(t_stream *out, t_fmt *f, va_list ap);
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 13:26:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/10/22 13:58:57 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 15:44:35 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ static void	(* const g_conv_table[256])(t_stream *, t_fmt *, va_list) = {
 	['x'] = conv_unsigned,
 	['X'] = conv_unsigned,
 	['f'] = conv_floating,
+	['v'] = conv_sv,
 };
 
 static int			is_flag_character(char c)

@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 12:23:11 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/10/22 13:58:29 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/22 15:45:19 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,5 +62,26 @@ void	conv_cstr(t_stream *out, t_fmt *f, va_list ap)
 		view.length = ft_min(ft_strlen(s), f->precision);
 	else
 		view.length = ft_strlen(s);
+	put_sv_padded(view, f->min_width, f->align, out);
+}
+
+void	conv_sv(t_stream *out, t_fmt *f, va_list ap)
+{
+	t_sv	view;
+
+	view = va_arg(ap, t_sv);
+	if (!view.start)
+	{
+		if (f->has_precision && f->precision < 6)
+		{
+			view = (t_sv){"", 0};
+		}
+		else
+		{
+			view = (t_sv){"(null)", 6};
+		}
+	}
+	if (f->has_precision && f->precision >= 0)
+		view.length = ft_min(view.length, f->precision);
 	put_sv_padded(view, f->min_width, f->align, out);
 }
