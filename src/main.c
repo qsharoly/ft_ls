@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/10/23 10:39:16 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/25 02:06:41 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -269,11 +269,12 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	perms[10] = '\0';
 	size_t nlink = f->status.st_nlink;
 	size_t fsize = f->status.st_size;
-	char *mtime = ctime(&(f->status.st_mtime));
-	char *mmm_dd_ = ft_strchr(mtime, ' ') + 1;
+	char mtime_buf[26];
+	char *mtime_start = ctime_r(&(f->status.st_mtime), mtime_buf);
+	char *mmm_dd_ = ft_strchr(mtime_start, ' ') + 1;
 	t_sv mmm_dd = (t_sv){mmm_dd_, 6};
-	char *hh_mm = &mtime[11];
-	char *_yyyy = &mtime[19];
+	char *hh_mm = &mtime_start[11];
+	char *_yyyy = &mtime_start[19];
 	t_sv hm_or_yy;
 	time_t now = time(NULL);
 #define SIX_MONTHS_AS_SECONDS 15778476
