@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/10/25 02:06:41 by debby            ###   ########.fr       */
+/*   Updated: 2022/10/25 03:57:53 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -269,44 +269,52 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	perms[10] = '\0';
 	size_t nlink = f->status.st_nlink;
 	size_t fsize = f->status.st_size;
+	char *month_string[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+		"Aug", "Sep", "Oct", "Nov", "Dec"};
+	struct tm mtime_breakdown;
+	localtime_r(&(f->status.st_mtime), &mtime_breakdown);
 	char mtime_buf[26];
-	char *mtime_start = ctime_r(&(f->status.st_mtime), mtime_buf);
-	char *mmm_dd_ = ft_strchr(mtime_start, ' ') + 1;
-	t_sv mmm_dd = (t_sv){mmm_dd_, 6};
-	char *hh_mm = &mtime_start[11];
-	char *_yyyy = &mtime_start[19];
-	t_sv hm_or_yy;
+	int  mtime_len;
 	time_t now = time(NULL);
 #define SIX_MONTHS_AS_SECONDS 15778476
+	//if older than six months print year, otherwise hours:minutes
 	if (now < f->status.st_mtime || now - f->status.st_mtime > SIX_MONTHS_AS_SECONDS)
 	{
-		hm_or_yy = (t_sv){_yyyy, 5};
+
+		mtime_len = ft_snprintf(mtime_buf, 13, "%s %2d %5d",
+				month_string[mtime_breakdown.tm_mon],
+				mtime_breakdown.tm_mday,
+				mtime_breakdown.tm_year + 1900);
 	}
 	else
 	{
-		hm_or_yy = (t_sv){hh_mm, 5};
+		mtime_len = ft_snprintf(mtime_buf, 13, "%s %2d %02d:%02d",
+				month_string[mtime_breakdown.tm_mon],
+				mtime_breakdown.tm_mday,
+				mtime_breakdown.tm_hour,
+				mtime_breakdown.tm_min);
 	}
 	if (S_ISLNK(mode))
 	{
-		ft_printf("%s %*lu %-*s %-*s %*lu %v %v %v -> %v\n",
+		ft_printf("%s %*lu %-*s %-*s %*lu %v %v -> %v\n",
 				perms,
 				w.nlink - 1, nlink,
 				w.owner, f->owner,
 				w.group, f->group,
 				w.size - 1, fsize,
-				mmm_dd, hm_or_yy,
+				(t_sv){mtime_buf, mtime_len},
 				f->name,
 				f->linkname);
 	}
 	else
 	{
-		ft_printf("%s %*lu %-*s %-*s %*lu %v %v %v\n",
+		ft_printf("%s %*lu %-*s %-*s %*lu %v %v\n",
 				perms,
 				w.nlink - 1, nlink,
 				w.owner, f->owner,
 				w.group, f->group,
 				w.size - 1, fsize,
-				mmm_dd, hm_or_yy,
+				(t_sv){mtime_buf, mtime_len},
 				f->name);
 	}
 }
