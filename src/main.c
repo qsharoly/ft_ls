@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/10/25 03:57:53 by debby            ###   ########.fr       */
+/*   Updated: 2022/11/27 11:11:06 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -227,7 +227,11 @@ size_t	n_digits(size_t val)
 {
 	size_t	n;
 
-	n = 1;
+	if (val == 0)
+	{
+		return 1;
+	}
+	n = 0;
 	while (val)
 	{
 		val /= 10;
@@ -298,10 +302,10 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	{
 		ft_printf("%s %*lu %-*s %-*s %*lu %v %v -> %v\n",
 				perms,
-				w.nlink - 1, nlink,
+				w.nlink, nlink,
 				w.owner, f->owner,
 				w.group, f->group,
-				w.size - 1, fsize,
+				w.size, fsize,
 				(t_sv){mtime_buf, mtime_len},
 				f->name,
 				f->linkname);
@@ -310,10 +314,10 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	{
 		ft_printf("%s %*lu %-*s %-*s %*lu %v %v\n",
 				perms,
-				w.nlink - 1, nlink,
+				w.nlink, nlink,
 				w.owner, f->owner,
 				w.group, f->group,
-				w.size - 1, fsize,
+				w.size, fsize,
 				(t_sv){mtime_buf, mtime_len},
 				f->name);
 	}
