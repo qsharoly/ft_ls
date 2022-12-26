@@ -67,6 +67,7 @@ chmod u-r "eacess"
 test "-1 -R" "recursive, inaccessible directory"
 test "-lR" "recursive, detailed, inaccessible directory"
 rm -rf "eacess"
+test "-1 d1 k j a.txt" "no such file or directory"
 
 echo
-echo $OK/$TOTAL Ok 
+echo $OK/$TOTAL Ok

@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/11/27 11:11:06 by kith             ###   ########.fr       */
+/*   Updated: 2022/12/27 00:29:37 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -623,12 +623,13 @@ void	list_initial_paths(const char **paths, int path_count, t_options options,
 		struct s_finfo	*new_info = arena_allocate_bytes(infos_arena, sizeof(*new_info), &success);
 		new_info->name.start = paths[i]; //TODO
 		new_info->name.length = ft_strlen(paths[i]);
+		int ok;
 		//in detailed mode print info about links themselves
 		if (options.detailed_mode)
-			get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, AT_SYMLINK_NOFOLLOW, names_arena);
+			ok = get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, AT_SYMLINK_NOFOLLOW, names_arena);
 		else
-			get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, 0, names_arena);
-		if (!new_info)
+			ok = get_file_info(new_info, paths[i], &detail_meta, AT_FDCWD, options, 0, names_arena);
+		if (ok != Success)
 		{
 			g_had_minor_errors = true;
 			i++;
