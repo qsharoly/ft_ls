@@ -1,4 +1,4 @@
-BINARY ?= ft_ls
+BIN ?= ft_ls
 
 CC ?= clang
 debug ?= -g
@@ -17,13 +17,13 @@ include libftprintf/module
 
 .phony: all clean fclean re
 
-all:  $(BINARY)
+all:  $(BIN)
 
-$(BINARY): $(SRC) src/*.h libft/includes/*.h libftprintf/includes/*.h
+$(BIN): $(SRC) src/*.h libft/includes/*.h libftprintf/includes/*.h
 	$(CC) $(CFLAGS) -o $@ $(SRC) $(LIBS)
 
 clean:
 fclean: clean
-	rm -f $(BINARY) 
+	rm -f $(BIN)
 re: fclean
 	make all

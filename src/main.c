@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2022/12/27 00:29:37 by kith             ###   ########.fr       */
+/*   Updated: 2023/01/21 01:34:17 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -240,10 +240,74 @@ size_t	n_digits(size_t val)
 	return (n);
 }
 
+static void	put_unsigned_simple_padded(unsigned long long value, int min_width,
+			enum e_align align, t_stream *out)
+{
+	char				buffer[MAXBUF_UTOA];
+	t_sv				repr;
+	int					base = 10;
+	int					upcase = 0;
+
+	repr = pf_utoa_base(buffer, value, base, upcase);
+	put_sv_padded(repr, min_width, align, out);
+}
+
+static void	put_unsigned_simple_with_leading_zeros(unsigned long long value, int min_width,
+			t_stream *out)
+{
+	char				buffer[MAXBUF_UTOA];
+	t_sv				repr;
+	int					base = 10;
+	int					upcase = 0;
+
+	repr = pf_utoa_base(buffer, value, base, upcase);
+	while(min_width > repr.length) {
+		pf_putc('0', out);
+		min_width--;
+	}
+	put_sv(repr, out);
+}
+
+static void	put_time(const time_t *timep, t_stream *out)
+{
+	char *month_string[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+		"Aug", "Sep", "Oct", "Nov", "Dec"};
+	struct tm time_breakdown;
+	localtime_r(timep, &time_breakdown);
+
+	time_t now = time(NULL);
+#define SIX_MONTHS_AS_SECONDS 15778476
+	//if older than six months print year, otherwise hours:minutes
+	if (now < *timep || now - *timep > SIX_MONTHS_AS_SECONDS)
+	{
+		//mmm
+		put_sv((t_sv){month_string[time_breakdown.tm_mon], 3}, out);
+		pf_putc(' ', out);
+		//dd
+		put_unsigned_simple_padded(time_breakdown.tm_mday, 2, Align_right, out);
+		pf_putc(' ', out);
+		//yyyy
+		put_unsigned_simple_padded(time_breakdown.tm_year + 1900, 5, Align_right, out);
+	}
+	else
+	{
+		//mmm
+		put_sv((t_sv){month_string[time_breakdown.tm_mon], 3}, out);
+		pf_putc(' ', out);
+		//dd
+		put_unsigned_simple_padded(time_breakdown.tm_mday, 2, Align_right, out);
+		pf_putc(' ', out);
+		//hh:mm
+		put_unsigned_simple_with_leading_zeros(time_breakdown.tm_hour, 2, out);
+		pf_putc(':', out);
+		put_unsigned_simple_with_leading_zeros(time_breakdown.tm_hour, 2, out);
+	}
+}
+
 static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 {
 	mode_t	mode;
-	char	perms[11];
+	char	perms[10];
 
 	mode = f->status.st_mode;
 	perms[0] = '?';
@@ -270,57 +334,29 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	perms[7] = mode & S_IROTH ? 'r' : '-';
 	perms[8] = mode & S_IWOTH ? 'w' : '-';
 	perms[9] = mode & S_IXOTH ? 'x' : '-';
-	perms[10] = '\0';
-	size_t nlink = f->status.st_nlink;
-	size_t fsize = f->status.st_size;
-	char *month_string[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
-		"Aug", "Sep", "Oct", "Nov", "Dec"};
-	struct tm mtime_breakdown;
-	localtime_r(&(f->status.st_mtime), &mtime_breakdown);
-	char mtime_buf[26];
-	int  mtime_len;
-	time_t now = time(NULL);
-#define SIX_MONTHS_AS_SECONDS 15778476
-	//if older than six months print year, otherwise hours:minutes
-	if (now < f->status.st_mtime || now - f->status.st_mtime > SIX_MONTHS_AS_SECONDS)
-	{
 
-		mtime_len = ft_snprintf(mtime_buf, 13, "%s %2d %5d",
-				month_string[mtime_breakdown.tm_mon],
-				mtime_breakdown.tm_mday,
-				mtime_breakdown.tm_year + 1900);
+	char		print_buffer[BUFFER_SIZE];
+	t_stream	out = pf_stream_init(STDOUT, print_buffer, BUFFER_SIZE, putc_impl_printf);
+
+	put_sv((t_sv){perms, 10}, &out);
+	pf_putc(' ', &out);
+	put_unsigned_simple_padded(f->status.st_nlink, w.nlink, Align_right, &out);
+	pf_putc(' ', &out);
+	put_sv_padded((t_sv){f->owner, ft_strlen(f->owner)}, w.owner, Align_left, &out);
+	pf_putc(' ', &out);
+	put_sv_padded((t_sv){f->group, ft_strlen(f->group)}, w.group, Align_left, &out);
+	pf_putc(' ', &out);
+	put_unsigned_simple_padded(f->status.st_size, w.size, Align_right, &out);
+	pf_putc(' ', &out);
+	put_time(&(f->status.st_mtime), &out);
+	pf_putc(' ', &out);
+	put_sv(f->name, &out);
+	if (S_ISLNK(mode)) {
+		put_sv((t_sv){" -> ", 4}, &out);
+		put_sv(f->linkname, &out);
 	}
-	else
-	{
-		mtime_len = ft_snprintf(mtime_buf, 13, "%s %2d %02d:%02d",
-				month_string[mtime_breakdown.tm_mon],
-				mtime_breakdown.tm_mday,
-				mtime_breakdown.tm_hour,
-				mtime_breakdown.tm_min);
-	}
-	if (S_ISLNK(mode))
-	{
-		ft_printf("%s %*lu %-*s %-*s %*lu %v %v -> %v\n",
-				perms,
-				w.nlink, nlink,
-				w.owner, f->owner,
-				w.group, f->group,
-				w.size, fsize,
-				(t_sv){mtime_buf, mtime_len},
-				f->name,
-				f->linkname);
-	}
-	else
-	{
-		ft_printf("%s %*lu %-*s %-*s %*lu %v %v\n",
-				perms,
-				w.nlink, nlink,
-				w.owner, f->owner,
-				w.group, f->group,
-				w.size, fsize,
-				(t_sv){mtime_buf, mtime_len},
-				f->name);
-	}
+	pf_putc('\n', &out);
+	pf_stream_flush(&out);
 }
 
 static int	get_termwidth(void)

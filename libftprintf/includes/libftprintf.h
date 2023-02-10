@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/01/14 15:31:58 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/10/22 15:45:11 by debby            ###   ########.fr       */
+/*   Updated: 2023/01/20 21:36:20 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,6 +88,8 @@ typedef struct	s_parts
 	int			extra_zeros;
 	t_sv		f_str;
 }				t_parts;
+
+void			putc_impl_printf(int c, t_stream *b);
 
 int				ft_printf(const char *format, ...);
 int				ft_dprintf(int fd, const char *format, ...);

@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/27 18:24:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/10/22 13:52:39 by debby            ###   ########.fr       */
+/*   Updated: 2023/01/20 21:35:40 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ static void		print_args(t_stream *out, const char *format, va_list ap)
 	}
 }
 
-static void	putc_impl_printf(int c, t_stream *b)
+void	putc_impl_printf(int c, t_stream *b)
 {
 	int		written;
 
@@ -62,8 +62,8 @@ __attribute__((__format__(__printf__, 1, 2)))
 int				ft_printf(const char *format, ...)
 {
 	va_list		ap;
-	t_stream	b;
 	char		buffer[BUFFER_SIZE];
+	t_stream	b;
 
 	b = pf_stream_init(STDOUT, buffer, BUFFER_SIZE, putc_impl_printf);
 	va_start(ap, format);
