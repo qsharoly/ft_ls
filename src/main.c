@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2023/02/11 02:36:37 by kith             ###   ########.fr       */
+/*   Updated: 2023/02/11 04:41:55 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -735,13 +735,13 @@ void	list_directory(char *current_path, int depth, t_options options,
 		bool *had_printed, bool *should_announce,
 		t_arena *names_arena, t_arena *infos_arena, t_stream *out)
 {
-	DIR				*dir;
+	DIR				*current_dir;
 	if (depth >= MAX_DEPTH)
 	{
 		panic(Fail_serious, "%s: can't list '%s': reached max directory depth.\n", g_program_name, current_path);
 	}
-	dir = opendir(current_path);
-	if (!dir)
+	current_dir = opendir(current_path);
+	if (!current_dir)
 	{
 		ft_dprintf(STDERR, "%s: cannot open directory '%s': %s\n", g_program_name, current_path, strerror(errno));
 		g_had_minor_errors = true;
@@ -756,7 +756,7 @@ void	list_directory(char *current_path, int depth, t_options options,
 	// read filenames
 	entry_count = 0;
 	struct dirent	*entry;
-	while ((entry = readdir(dir)))
+	while ((entry = readdir(current_dir)))
 	{
 		if (entry_count >= MAX_BREADTH)
 		{
@@ -792,10 +792,9 @@ void	list_directory(char *current_path, int depth, t_options options,
 		for (int i = 0; i < entry_count; ++i)
 		{
 			get_file_info(infos[i], infos[i]->name.start, &detail_aggregates,
-					dirfd(dir), options, AT_SYMLINK_NOFOLLOW, names_arena);
+					dirfd(current_dir), options, AT_SYMLINK_NOFOLLOW, names_arena);
 		}
 	}
-	closedir(dir);
 
 	// sort
 	qsort(infos, entry_count, sizeof(*infos), g_compare);
@@ -850,6 +849,7 @@ void	list_directory(char *current_path, int depth, t_options options,
 			path_pop(current_path);
 		}
 	}
+	closedir(current_dir);
 	// rollback names memory
 	names_arena->offset = names_arena_checkpoint;
 }
