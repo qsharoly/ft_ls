@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2023/01/21 01:34:17 by kith             ###   ########.fr       */
+/*   Updated: 2023/02/11 02:36:37 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,10 @@
 static bool	g_had_minor_errors = false;
 const char	*g_program_name = "ft_ls"; //initialize to default name
 int	(*g_compare)(const void *left, const void *right);
+
+void	list_directory(char *path_buffer, int depth, t_options options,
+		bool *had_printed, bool *should_announce,
+		t_arena *names_arena, t_arena *infos_arena, t_stream *out);
 
 #define TABLE_SIZE 1024 //must be power of 2 for calc_hash to work
 int calc_hash(int key)
@@ -240,6 +244,17 @@ size_t	n_digits(size_t val)
 	return (n);
 }
 
+static void put_unsigned_simple(unsigned long long value, t_stream *out)
+{
+	char				buffer[MAXBUF_UTOA];
+	t_sv				repr;
+	int					base = 10;
+	int					upcase = 0;
+
+	repr = pf_utoa_base(buffer, value, base, upcase);
+	put_sv(repr, out);
+}
+
 static void	put_unsigned_simple_padded(unsigned long long value, int min_width,
 			enum e_align align, t_stream *out)
 {
@@ -266,6 +281,11 @@ static void	put_unsigned_simple_with_leading_zeros(unsigned long long value, int
 		min_width--;
 	}
 	put_sv(repr, out);
+}
+
+static void put_char(char c, t_stream *out)
+{
+	pf_putc(c, out);
 }
 
 static void	put_time(const time_t *timep, t_stream *out)
@@ -304,7 +324,7 @@ static void	put_time(const time_t *timep, t_stream *out)
 	}
 }
 
-static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
+static void	print_detailed_info(struct s_finfo	*f, struct s_width w, t_stream *out)
 {
 	mode_t	mode;
 	char	perms[10];
@@ -335,28 +355,24 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w)
 	perms[8] = mode & S_IWOTH ? 'w' : '-';
 	perms[9] = mode & S_IXOTH ? 'x' : '-';
 
-	char		print_buffer[BUFFER_SIZE];
-	t_stream	out = pf_stream_init(STDOUT, print_buffer, BUFFER_SIZE, putc_impl_printf);
-
-	put_sv((t_sv){perms, 10}, &out);
-	pf_putc(' ', &out);
-	put_unsigned_simple_padded(f->status.st_nlink, w.nlink, Align_right, &out);
-	pf_putc(' ', &out);
-	put_sv_padded((t_sv){f->owner, ft_strlen(f->owner)}, w.owner, Align_left, &out);
-	pf_putc(' ', &out);
-	put_sv_padded((t_sv){f->group, ft_strlen(f->group)}, w.group, Align_left, &out);
-	pf_putc(' ', &out);
-	put_unsigned_simple_padded(f->status.st_size, w.size, Align_right, &out);
-	pf_putc(' ', &out);
-	put_time(&(f->status.st_mtime), &out);
-	pf_putc(' ', &out);
-	put_sv(f->name, &out);
+	put_sv((t_sv){perms, 10}, out);
+	pf_putc(' ', out);
+	put_unsigned_simple_padded(f->status.st_nlink, w.nlink, Align_right, out);
+	pf_putc(' ', out);
+	put_sv_padded((t_sv){f->owner, ft_strlen(f->owner)}, w.owner, Align_left, out);
+	pf_putc(' ', out);
+	put_sv_padded((t_sv){f->group, ft_strlen(f->group)}, w.group, Align_left, out);
+	pf_putc(' ', out);
+	put_unsigned_simple_padded(f->status.st_size, w.size, Align_right, out);
+	pf_putc(' ', out);
+	put_time(&(f->status.st_mtime), out);
+	pf_putc(' ', out);
+	put_sv(f->name, out);
 	if (S_ISLNK(mode)) {
-		put_sv((t_sv){" -> ", 4}, &out);
-		put_sv(f->linkname, &out);
+		put_sv((t_sv){" -> ", 4}, out);
+		put_sv(f->linkname, out);
 	}
-	pf_putc('\n', &out);
-	pf_stream_flush(&out);
+	pf_putc('\n', out);
 }
 
 static int	get_termwidth(void)
@@ -465,7 +481,8 @@ static void update_detail_meta(struct s_meta *meta, struct s_finfo *info)
 	meta->w.name = ft_max(meta->w.name, info->name.length);
 }
 
-bool	print_informations(struct s_finfo **items, int item_count, t_options options, struct s_width detail_meta_w)
+bool	print_informations(struct s_finfo **items, int item_count,
+		t_options options, struct s_width detail_meta_w, t_stream *out)
 {
 	// need to print a newline before the first dir announcement?
 	bool	had_printed = false;
@@ -476,7 +493,7 @@ bool	print_informations(struct s_finfo **items, int item_count, t_options option
 		int i = 0;
 		while (i < item_count)
 		{
-			print_detailed_info(items[i], detail_meta_w);
+			print_detailed_info(items[i], detail_meta_w, out);
 			i++;
 			had_printed = true;
 		}
@@ -486,21 +503,24 @@ bool	print_informations(struct s_finfo **items, int item_count, t_options option
 		int i = 0;
 		while (i < item_count)
 		{
-			ft_printf("%s\n", items[i]->name.start);
+			put_sv(items[i]->name, out);
+			pf_putc('\n', out);
 			i++;
 			had_printed = true;
 		}
 	}
 	else
 	{
-		char	*separator = "  ";
+		const char    *const sep_string = "  ";
+		t_sv	separator = (t_sv){sep_string, ft_strlen(sep_string)};
 		int		*column_widths = NULL;
 		int		stride = 1;
 		if (item_count > 1)
 		{
 			int	termwidth = get_termwidth();
-			stride = columnize(&column_widths, items, item_count, ft_strlen(separator), termwidth);
+			stride = columnize(&column_widths, items, item_count, separator.length, termwidth);
 		}
+
 		int row = 0;
 		while (row < stride)
 		{
@@ -510,9 +530,15 @@ bool	print_informations(struct s_finfo **items, int item_count, t_options option
 			while (idx < item_count)
 			{
 				if (idx + stride < item_count)
-					ft_printf("%-*s%s", column_widths[col], items[idx]->name.start, separator); 
+				{
+					put_sv_padded(items[idx]->name, column_widths[col], Align_left, out);
+					put_sv(separator, out);
+				}
 				else
-					ft_printf("%s\n", items[idx]->name.start);
+				{
+					put_sv(items[idx]->name, out);
+					pf_putc('\n', out);
+				}
 				col++;
 				idx += stride;
 				had_printed = true;
@@ -639,7 +665,7 @@ int get_file_info(struct s_finfo *info, const char *filename, struct s_meta *det
 }
 
 void	list_initial_paths(const char **paths, int path_count, t_options options,
-		t_arena *names_arena, t_arena *infos_arena)
+		t_arena *names_arena, t_arena *infos_arena, t_stream *out)
 {
 	struct s_finfo	*nondirs[MAX_BREADTH];
 	struct s_finfo	*dirs[MAX_BREADTH];
@@ -684,7 +710,7 @@ void	list_initial_paths(const char **paths, int path_count, t_options options,
 
 
 	// print
-	bool had_printed = print_informations(nondirs, nondir_count, options, detail_meta.w);
+	bool had_printed = print_informations(nondirs, nondir_count, options, detail_meta.w, out);
 
 	// list directories (maybe recursively)
 	i = 0;
@@ -699,14 +725,15 @@ void	list_initial_paths(const char **paths, int path_count, t_options options,
 		bool should_announce = (options.recursive || path_count > 1);
 		char current_path[PATH_MAX] = {};
 		ft_strcpy(current_path, dirs[i]->name.start);
-		list_directory(current_path, STARTING_DEPTH + 1, options, &had_printed, &should_announce, names_arena, infos_arena);
+		list_directory(current_path, STARTING_DEPTH + 1, options, &had_printed,
+				&should_announce, names_arena, infos_arena, out);
 		i++;
 	}
 }
 
 void	list_directory(char *current_path, int depth, t_options options,
 		bool *had_printed, bool *should_announce,
-		t_arena *names_arena, t_arena *infos_arena)
+		t_arena *names_arena, t_arena *infos_arena, t_stream *out)
 {
 	DIR				*dir;
 	if (depth >= MAX_DEPTH)
@@ -777,16 +804,21 @@ void	list_directory(char *current_path, int depth, t_options options,
 	if (*should_announce)
 	{
 		if (*had_printed)
-			ft_printf("\n");
-		ft_printf("%s:\n", current_path);
+		{
+			put_char('\n', out);
+		}
+		put_sv((t_sv){current_path, ft_strlen(current_path)}, out);
+		put_char('\n', out);
 		*had_printed = true;
 	}
 	*should_announce = true;
 	if (options.detailed_mode)
 	{
-		ft_printf("total %lu\n", detail_aggregates.total_blocks / BLOCK_HACK);
+		put_sv((t_sv){"total ", 6}, out);
+		put_unsigned_simple(detail_aggregates.total_blocks / BLOCK_HACK, out);
+		put_char('\n', out);
 	}
-	*had_printed |= print_informations(infos, entry_count, options, detail_aggregates.w);
+	*had_printed |= print_informations(infos, entry_count, options, detail_aggregates.w, out);
 
 	t_sv	dir_names[MAX_BREADTH];
 	int		dir_names_count = 0;
@@ -813,7 +845,8 @@ void	list_directory(char *current_path, int depth, t_options options,
 	{
 		{
 			path_push(current_path, dir_names[i].start);
-			list_directory(current_path, depth + 1, options, had_printed, should_announce, names_arena, infos_arena);
+			list_directory(current_path, depth + 1, options, had_printed,
+					should_announce, names_arena, infos_arena, out);
 			path_pop(current_path);
 		}
 	}
@@ -868,7 +901,12 @@ int		main(int argc, const char **argv)
 	}
 	t_arena	names_arena = (t_arena){.memory = memory, .capacity = names_cap};
 	t_arena infos_arena = (t_arena){.memory = memory + names_cap, .capacity = infos_cap};
-	list_initial_paths(paths, path_count, options, &names_arena, &infos_arena);
+
+	char		print_buffer[BUFFER_SIZE];
+	t_stream	out = pf_stream_init(STDOUT, print_buffer, BUFFER_SIZE, putc_impl_printf);
+	list_initial_paths(paths, path_count, options, &names_arena, &infos_arena, &out);
+	pf_stream_flush(&out);
+
 	if (options.mem_usage)
 	{
 		ft_printf("max usage: names = %d/%d, infos = %d/%d\n",
