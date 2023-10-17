@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2023/10/17 15:22:10 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/17 15:36:43 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -320,7 +320,7 @@ static void	put_time(const time_t *timep, t_stream *out)
 		//hh:mm
 		put_unsigned_simple_with_leading_zeros(time_breakdown.tm_hour, 2, out);
 		pf_putc(':', out);
-		put_unsigned_simple_with_leading_zeros(time_breakdown.tm_hour, 2, out);
+		put_unsigned_simple_with_leading_zeros(time_breakdown.tm_min, 2, out);
 	}
 }
 
