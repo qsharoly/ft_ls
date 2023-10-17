@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2023/10/17 15:36:43 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/17 15:57:38 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -244,18 +244,21 @@ size_t	n_digits(size_t val)
 	return (n);
 }
 
-static void put_unsigned_simple(unsigned long long value, t_stream *out)
+static void put_unsigned(unsigned long long value, t_stream *out)
 {
 	char				buffer[MAXBUF_UTOA];
 	t_sv				repr;
 	int					base = 10;
 	int					upcase = 0;
 
-	repr = pf_utoa_base(buffer, value, base, upcase);
+	if (value == 0)
+		repr = (t_sv){"0", 1};
+	else
+		repr = pf_utoa_base(buffer, value, base, upcase);
 	put_sv(repr, out);
 }
 
-static void	put_unsigned_simple_padded(unsigned long long value, int min_width,
+static void	put_unsigned_padded(unsigned long long value, int min_width,
 			enum e_align align, t_stream *out)
 {
 	char				buffer[MAXBUF_UTOA];
@@ -263,11 +266,14 @@ static void	put_unsigned_simple_padded(unsigned long long value, int min_width,
 	int					base = 10;
 	int					upcase = 0;
 
-	repr = pf_utoa_base(buffer, value, base, upcase);
+	if (value == 0)
+		repr = (t_sv){"0", 1};
+	else
+		repr = pf_utoa_base(buffer, value, base, upcase);
 	put_sv_padded(repr, min_width, align, out);
 }
 
-static void	put_unsigned_simple_with_leading_zeros(unsigned long long value, int min_width,
+static void	put_unsigned_with_leading_zeros(unsigned long long value, int min_width,
 			t_stream *out)
 {
 	char				buffer[MAXBUF_UTOA];
@@ -275,7 +281,10 @@ static void	put_unsigned_simple_with_leading_zeros(unsigned long long value, int
 	int					base = 10;
 	int					upcase = 0;
 
-	repr = pf_utoa_base(buffer, value, base, upcase);
+	if (value == 0)
+		repr = (t_sv){"0", 1};
+	else
+		repr = pf_utoa_base(buffer, value, base, upcase);
 	while(min_width > repr.length) {
 		pf_putc('0', out);
 		min_width--;
@@ -304,10 +313,10 @@ static void	put_time(const time_t *timep, t_stream *out)
 		put_sv((t_sv){month_string[time_breakdown.tm_mon], 3}, out);
 		pf_putc(' ', out);
 		//dd
-		put_unsigned_simple_padded(time_breakdown.tm_mday, 2, Align_right, out);
+		put_unsigned_padded(time_breakdown.tm_mday, 2, Align_right, out);
 		pf_putc(' ', out);
 		//yyyy
-		put_unsigned_simple_padded(time_breakdown.tm_year + 1900, 5, Align_right, out);
+		put_unsigned_padded(time_breakdown.tm_year + 1900, 5, Align_right, out);
 	}
 	else
 	{
@@ -315,12 +324,12 @@ static void	put_time(const time_t *timep, t_stream *out)
 		put_sv((t_sv){month_string[time_breakdown.tm_mon], 3}, out);
 		pf_putc(' ', out);
 		//dd
-		put_unsigned_simple_padded(time_breakdown.tm_mday, 2, Align_right, out);
+		put_unsigned_padded(time_breakdown.tm_mday, 2, Align_right, out);
 		pf_putc(' ', out);
 		//hh:mm
-		put_unsigned_simple_with_leading_zeros(time_breakdown.tm_hour, 2, out);
+		put_unsigned_with_leading_zeros(time_breakdown.tm_hour, 2, out);
 		pf_putc(':', out);
-		put_unsigned_simple_with_leading_zeros(time_breakdown.tm_min, 2, out);
+		put_unsigned_with_leading_zeros(time_breakdown.tm_min, 2, out);
 	}
 }
 
@@ -357,13 +366,13 @@ static void	print_detailed_info(struct s_finfo	*f, struct s_width w, t_stream *o
 
 	put_sv((t_sv){perms, 10}, out);
 	pf_putc(' ', out);
-	put_unsigned_simple_padded(f->status.st_nlink, w.nlink, Align_right, out);
+	put_unsigned_padded(f->status.st_nlink, w.nlink, Align_right, out);
 	pf_putc(' ', out);
 	put_sv_padded((t_sv){f->owner, ft_strlen(f->owner)}, w.owner, Align_left, out);
 	pf_putc(' ', out);
 	put_sv_padded((t_sv){f->group, ft_strlen(f->group)}, w.group, Align_left, out);
 	pf_putc(' ', out);
-	put_unsigned_simple_padded(f->status.st_size, w.size, Align_right, out);
+	put_unsigned_padded(f->status.st_size, w.size, Align_right, out);
 	pf_putc(' ', out);
 	put_time(&(f->status.st_mtime), out);
 	pf_putc(' ', out);
@@ -814,7 +823,7 @@ void	list_directory(char *current_path, int depth, t_options options,
 	if (options.detailed_mode)
 	{
 		put_sv((t_sv){"total ", 6}, out);
-		put_unsigned_simple(detail_aggregates.total_blocks / BLOCK_HACK, out);
+		put_unsigned(detail_aggregates.total_blocks / BLOCK_HACK, out);
 		put_char('\n', out);
 	}
 	*had_printed |= print_informations(infos, entry_count, options, detail_aggregates.w, out);
