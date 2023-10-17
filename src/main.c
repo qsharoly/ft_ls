@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2023/10/17 12:40:01 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/17 15:22:10 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -807,7 +807,7 @@ void	list_directory(char *current_path, int depth, t_options options,
 			put_char('\n', out);
 		}
 		put_sv((t_sv){current_path, ft_strlen(current_path)}, out);
-		put_char('\n', out);
+		put_sv((t_sv){":\n", 2}, out);
 		*had_printed = true;
 	}
 	*should_announce = true;
