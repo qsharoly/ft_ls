@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 13:26:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2023/10/17 12:45:09 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/17 15:14:10 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,32 +106,13 @@ static const char	*parse_precision(const char *pos, t_fmt *fmt, va_list ap)
 	return (pos);
 }
 
-static const char	*parse_type(const char *pos, t_fmt *f)
+static const char	*parse_base_and_case(const char *pos, t_fmt *f)
 {
-	// all other elements will be initialized to `0` which is `Unrecognized`
-	enum e_type	type_char_table[256] = {
-		['%'] = Percent_sign,
-		['d'] = Signed_integer,
-		['i'] = Signed_integer,
-		['u'] = Unsigned_integer,
-		['o'] = Unsigned_integer,
-		['x'] = Unsigned_integer,
-		['X'] = Unsigned_integer,
-		['c'] = Character,
-		['s'] = C_string,
-		['p'] = Pointer,
-		['f'] = Floating_point,
-		['v'] = String_view,
-	};
-
 	f->base = 10 * (*pos == 'd' || *pos == 'i' || *pos == 'u')
 		+ 8 * (*pos == 'o')
 		+ 16 * (*pos == 'x' || *pos == 'X');
 	f->upcase = (*pos == 'X');
-	f->type = type_char_table[(unsigned char)*pos];
-	if (f->type == Unrecognized)
-		return (pos);
-	return (pos + 1);
+	return (pos);
 }
 
 size_t	pf_parse_specifier(t_fmt *fmt, const char *str, va_list ap)
@@ -144,12 +125,13 @@ size_t	pf_parse_specifier(t_fmt *fmt, const char *str, va_list ap)
 	pos = parse_min_width(pos, fmt, ap);
 	pos = parse_precision(pos, fmt, ap);
 	pos = parse_size_modifier(pos, fmt);
-	pos = parse_type(pos, fmt);
-	if (fmt->type == Unrecognized)
+	pos = parse_base_and_case(pos, fmt);
+	fmt->type_char = *pos;
+	if (ft_strchr("%diuoxXcspfv", fmt->type_char)==NULL)
 		return (0);
 	if (!fmt->has_precision)
 	{
-		if (fmt->type == Floating_point)
+		if (ft_strchr("f", fmt->type_char))
 			fmt->precision = 6;
 		else
 			fmt->precision = 1;
@@ -159,29 +141,33 @@ size_t	pf_parse_specifier(t_fmt *fmt, const char *str, va_list ap)
 
 void	write_argument(t_stream *out, const t_fmt *fmt, va_list ap)
 {
-	switch (fmt->type) {
-	case Signed_integer:
-		conv_signed(out, fmt, ap);
-		break;
-	case Unsigned_integer:
-		conv_unsigned(out, fmt, ap);
-		break;
-	case Pointer:
-		conv_pointer(out, fmt, ap);
-		break;
-	case Character:
-		conv_character(out, fmt, ap);
-		break;
-	case C_string:
-		conv_cstr(out, fmt, ap);
-		break;
-	case Floating_point:
-		conv_floating(out, fmt, ap);
-		break;
-	case Percent_sign:
+	switch (fmt->type_char) {
+	case '%':
 		conv_percent(out, fmt, ap);
 		break;
-	case String_view:
+	case 'd':
+	case 'i':
+		conv_signed(out, fmt, ap);
+		break;
+	case 'u':
+	case 'o':
+	case 'x':
+	case 'X':
+		conv_unsigned(out, fmt, ap);
+		break;
+	case 'c':
+		conv_character(out, fmt, ap);
+		break;
+	case 's':
+		conv_cstr(out, fmt, ap);
+		break;
+	case 'p':
+		conv_pointer(out, fmt, ap);
+		break;
+	case 'f':
+		conv_floating(out, fmt, ap);
+		break;
+	case 'v':
 		conv_sv(out, fmt, ap);
 		break;
 	default:

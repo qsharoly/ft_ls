@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/01/14 15:31:58 by qsharoly          #+#    #+#             */
-/*   Updated: 2023/10/17 12:44:53 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/17 15:14:00 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,19 +48,6 @@ enum			e_size
 	Size_L,
 };
 
-enum			e_type
-{
-	Unrecognized = 0,
-	Signed_integer,
-	Unsigned_integer,
-	Pointer,
-	Character,
-	C_string,
-	Floating_point,
-	Percent_sign,
-	String_view,
-};
-
 enum			e_align
 {
 	Align_right,
@@ -86,7 +73,7 @@ typedef struct	s_fmt
 	int				base;
 	int				min_width;
 	int				precision;
-	enum e_type		type;
+	char			type_char;
 }				t_fmt;
 
 typedef struct	s_parts
