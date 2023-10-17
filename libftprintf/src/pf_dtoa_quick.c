@@ -15,7 +15,7 @@
 #include "float.h"
 #include <limits.h>
 
-static unsigned long	g_pow10[20] = {
+unsigned long	g_pow10[20] = {
 	1L,
 	10L,
 	100L,

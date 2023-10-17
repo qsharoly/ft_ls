@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2023/10/17 11:27:45 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/17 12:40:01 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -858,18 +858,16 @@ static void	putc_impl_ls_custom(int c, t_stream *b)
 {
 	int		written;
 
-	if (b->space_left == 0)
+	if (b->used == b->size)
 	{
 		written = write(b->fd, b->data, b->size);
 		if (written < 0)
 			pf_error("write error\n");
 		b->total_written += written;
-		b->pos = 0;
-		b->space_left = b->size;
+		b->used = 0;
 	}
-	b->data[b->pos] = c;
-	b->pos++;
-	b->space_left--;
+	b->data[b->used] = c;
+	b->used++;
 }
 
 int		main(int argc, const char **argv)

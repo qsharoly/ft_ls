@@ -6,24 +6,63 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/08/06 19:45:05 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/02/18 18:37:28 by debby            ###   ########.fr       */
+/*   Updated: 2022/04/08 08:25:46 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "bignum.h"
 
-t_big	big_raise(t_digit small_base, t_digit power)
+void	big_set_to_small(t_big *a, t_twodigit n)
 {
-	t_big	res;
-	t_big	base;
+	a->used = 1;
+	a->val[0] = n % BIG_BASE;
+	while (n /= BIG_BASE)
+	{
+		a->val[a->used] = n % BIG_BASE;
+		a->used++;
+	}
+}
 
-	if (small_base == 0 && power == 0)
-		return (big_from_number(1));
-	if (small_base == 0)
-		return (big_from_number(0));
-	res = big_from_number(1);
-	base = big_from_number(small_base);
-	while (power-- > 0)
-		res = big_mul(res, base);
-	return (res);
+void	big_shallow_swap(t_big *a, t_big *b)
+{
+	t_big	tmp;
+
+	tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
+void	big_mul_by_small(t_big *res, t_digit b)
+{
+	t_twodigit carry = 0;
+	int i = 0;
+	while (i < res->used)
+	{
+		t_twodigit prod = (t_twodigit)res->val[i] * (t_twodigit)b + carry;
+		res->val[i] = prod % BIG_BASE;
+		carry = prod / BIG_BASE;
+		i++;
+	}
+	big_addc_small(res, i, carry);
+}
+
+void	big_raise(t_big *res, t_digit base, t_digit power)
+{
+	if (base == 0 && power == 0)
+	{
+		big_set_to_small(res, 1);
+		return;
+	}
+	if (base == 0)
+	{
+		big_set_to_small(res, 0);
+		return;
+	}
+	big_set_to_small(res, 1);
+	t_digit i = 0;
+	while (i < power)
+	{
+		big_mul_by_small(res, base);
+		i++;
+	}
 }

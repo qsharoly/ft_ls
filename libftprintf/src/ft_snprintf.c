@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/27 18:24:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/10/25 04:01:03 by debby            ###   ########.fr       */
+/*   Updated: 2023/10/17 12:42:00 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,53 +14,58 @@
 #include "libftprintf.h"
 
 /*
+** if no more space left, but we are in the middle of a `conv_foo` function,
+** `putc_to_string_buffer` will no-op until the `conv_foo` finishes.
+** after that, printing will terminate in `print_args` function.
+*/
+
+static void	putc_to_string_buffer(int c, t_stream *b)
+{
+	if (b->used == b->size)
+		return ;
+	b->total_written++;
+	if (b->data)
+	{
+		b->data[b->used] = c;
+		b->used++;
+	}
+}
+
+static void	putc_only_count(int c, t_stream *b)
+{
+	(void)c;
+	b->total_written++;
+}
+
+/*
 ** if `out->size == 0` we still go through the conversion
 ** to count how many chars would be written
-** (`putc_impl_snprintf` will do nothing but increase `out->total_written`
-** in this case)
 */
 
 static void	print_args(t_stream *out, const char *format, va_list ap)
 {
 	t_fmt	fmt;
+	size_t	spec_length;
 
-	while ((out->space_left > 0 || (out->size == 0)) && *format)
+	while (*format)
 	{
+		if (out->used >= out->size && out->putc != putc_only_count)
+			break;
 		if (*format == '%')
 		{
-			fmt = pf_parse_specifier(format, ap);
-			if (fmt.write_arg)
-				fmt.write_arg(out, &fmt, ap);
-			format += fmt.spec_length;
-			continue ;
+			spec_length = pf_parse_specifier(&fmt, format, ap);
+			if (spec_length > 0)
+			{
+				write_argument(out, &fmt, ap);
+				format += spec_length;
+				continue ;
+			}
 		}
 		pf_putc(*format, out);
 		format++;
 	}
 }
 
-/*
-** if no more space left, but we are in the middle of a variable,
-** `putc_impl_snprintf` will do a no-op until the variable finishes.
-** after that, printing will terminate in `print_args` function.
-**
-** `total_written` is always incremented to count how many characters
-** would be written when `bufsz` is set to 0.
-*/
-
-static void	putc_impl_snprintf(int c, t_stream *b)
-{
-	b->total_written++;
-	// leave at least one byte for terminating null
-	if (b->space_left <= 1)
-		return ;
-	if (b->data)
-	{
-		b->data[b->pos] = c;
-		b->pos++;
-		b->space_left--;
-	}
-}
 
 // https://en.cppreference.com/w/c/io/fprintf
 //
@@ -76,13 +81,16 @@ int			ft_snprintf(char *buffer, int bufsz, const char *format, ...)
 	va_list		ap;
 	t_stream	b;
 
-	b = pf_stream_init(STDOUT, buffer, bufsz, putc_impl_snprintf);
+	if (bufsz == 0)
+		b = pf_stream_init(STDOUT, buffer, bufsz, putc_only_count);
+	else
+		b = pf_stream_init(STDOUT, buffer, bufsz, putc_to_string_buffer);
 	va_start(ap, format);
 	print_args(&b, format, ap);
 	va_end(ap);
 	if (buffer && bufsz > 0)
 	{
-		buffer[b.pos] = '\0';
+		buffer[b.used] = '\0';
 	}
 	return (b.total_written);
 }

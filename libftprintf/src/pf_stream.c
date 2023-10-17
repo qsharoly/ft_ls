@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/08/06 19:26:20 by qsharoly          #+#    #+#             */
-/*   Updated: 2021/03/10 07:34:19 by debby            ###   ########.fr       */
+/*   Updated: 2022/04/10 08:08:05 by debby            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,10 +21,9 @@ t_stream	pf_stream_init(int fd, char *buffer, int size,
 	b.putc = putc;
 	b.data = buffer;
 	b.size = size;
+	b.used = 0;
 	b.fd = fd;
 	b.total_written = 0;
-	b.space_left = size;
-	b.pos = 0;
 	return (b);
 }
 
@@ -36,14 +35,13 @@ void		pf_stream_flush(t_stream *b)
 {
 	int		written;
 
-	if (b->space_left != b->size)
+	if (b->used > 0)
 	{
-		written = write(b->fd, b->data, b->size - b->space_left);
+		written = write(b->fd, b->data, b->used);
 		if (written < 0)
 			pf_error("write error\n");
 		b->total_written += written;
-		b->pos = 0;
-		b->space_left = b->size;
+		b->used = 0;
 	}
 }
 

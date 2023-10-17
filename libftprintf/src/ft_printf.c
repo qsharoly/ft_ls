@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/27 18:24:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2023/10/17 11:26:02 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/17 12:12:33 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,39 +23,40 @@ void			pf_error(const char *msg)
 
 static void		print_args(t_stream *out, const char *format, va_list ap)
 {
-	t_fmt			fmt;
+	t_fmt	fmt;
+	size_t	spec_length;
 
 	while (*format)
 	{
 		if (*format == '%')
 		{
-			fmt = pf_parse_specifier(format, ap);
-			if (fmt.write_arg)
-				fmt.write_arg(out, &fmt, ap);
-			format += fmt.spec_length;
-			continue ;
+			spec_length = pf_parse_specifier(&fmt, format, ap);
+			if (spec_length > 0)
+			{
+				write_argument(out, &fmt, ap);
+				format += spec_length;
+				continue ;
+			}
 		}
 		pf_putc(*format, out);
 		format++;
 	}
 }
 
-static void	putc_impl_printf(int c, t_stream *b)
+static void	putc_to_fd(int c, t_stream *b)
 {
 	int		written;
 
-	if (b->space_left == 0)
+	if (b->used == b->size)
 	{
 		written = write(b->fd, b->data, b->size);
 		if (written < 0)
 			pf_error("write error\n");
 		b->total_written += written;
-		b->pos = 0;
-		b->space_left = b->size;
+		b->used = 0;
 	}
-	b->data[b->pos] = c;
-	b->pos++;
-	b->space_left--;
+	b->data[b->used] = c;
+	b->used++;
 }
 
 __attribute__((__format__(__printf__, 1, 2)))
@@ -65,7 +66,7 @@ int				ft_printf(const char *format, ...)
 	char		buffer[BUFFER_SIZE];
 	t_stream	b;
 
-	b = pf_stream_init(STDOUT, buffer, BUFFER_SIZE, putc_impl_printf);
+	b = pf_stream_init(STDOUT, buffer, BUFFER_SIZE, putc_to_fd);
 	va_start(ap, format);
 	print_args(&b, format, ap);
 	va_end(ap);
@@ -80,7 +81,7 @@ int				ft_dprintf(int fd, const char *format, ...)
 	t_stream	b;
 	char		buffer[BUFFER_SIZE];
 
-	b = pf_stream_init(fd, buffer, BUFFER_SIZE, putc_impl_printf);
+	b = pf_stream_init(fd, buffer, BUFFER_SIZE, putc_to_fd);
 	va_start(ap, format);
 	print_args(&b, format, ap);
 	va_end(ap);
@@ -93,7 +94,7 @@ int				ft_vdprintf(int fd, const char *format, va_list ap)
 	t_stream	b;
 	char		buffer[BUFFER_SIZE];
 
-	b = pf_stream_init(fd, buffer, BUFFER_SIZE, putc_impl_printf);
+	b = pf_stream_init(fd, buffer, BUFFER_SIZE, putc_to_fd);
 	print_args(&b, format, ap);
 	pf_stream_flush(&b);
 	return (b.total_written);

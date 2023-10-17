@@ -12,9 +12,7 @@ libftprintf/src/pf_conv_floating.c\
 libftprintf/src/pf_utoa_base.c\
 libftprintf/src/pf_dtoa.c\
 libftprintf/src/pf_dtoa_quick.c\
-libftprintf/src/bignum/big_zero.c\
-libftprintf/src/bignum/big_from_digit.c\
-libftprintf/src/bignum/big_add.c\
+libftprintf/src/bignum/big_init.c\
 libftprintf/src/bignum/big_mul.c\
 libftprintf/src/bignum/big_raise.c\
 libftprintf/src/bignum/big_to_str.c\

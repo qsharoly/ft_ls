@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 12:23:11 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/10/22 15:45:19 by debby            ###   ########.fr       */
+/*   Updated: 2023/10/17 12:44:10 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 
 #if __APPLE__
 
-void	conv_percent(t_stream *out, t_fmt *f, va_list ap)
+void	conv_percent(t_stream *out, const t_fmt *f, va_list ap)
 {
 	char	cto[1];
 
@@ -27,7 +27,7 @@ void	conv_percent(t_stream *out, t_fmt *f, va_list ap)
 
 #elif __linux__
 
-void	conv_percent(t_stream *out, t_fmt *f, va_list ap)
+void	conv_percent(t_stream *out, const t_fmt *f, va_list ap)
 {
 	(void)ap;
 	(void)f;
@@ -36,7 +36,7 @@ void	conv_percent(t_stream *out, t_fmt *f, va_list ap)
 
 #endif
 
-void	conv_char(t_stream *out, t_fmt *f, va_list ap)
+void	conv_character(t_stream *out, const t_fmt *f, va_list ap)
 {
 	char	c[1];
 
@@ -44,7 +44,7 @@ void	conv_char(t_stream *out, t_fmt *f, va_list ap)
 	put_sv_padded((t_sv){ c, 1 }, f->min_width, f->align, out);
 }
 
-void	conv_cstr(t_stream *out, t_fmt *f, va_list ap)
+void	conv_cstr(t_stream *out, const t_fmt *f, va_list ap)
 {
 	char	*s;
 	t_sv	view;
@@ -65,7 +65,7 @@ void	conv_cstr(t_stream *out, t_fmt *f, va_list ap)
 	put_sv_padded(view, f->min_width, f->align, out);
 }
 
-void	conv_sv(t_stream *out, t_fmt *f, va_list ap)
+void	conv_sv(t_stream *out, const t_fmt *f, va_list ap)
 {
 	t_sv	view;
 

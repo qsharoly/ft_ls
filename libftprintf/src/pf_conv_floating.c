@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 05:31:25 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/10/22 14:01:05 by debby            ###   ########.fr       */
+/*   Updated: 2023/10/17 12:26:26 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ t_sv	sign_prefix(int is_negative, const t_fmt *fmt)
 		return (sv_from_cstr(""));
 }
 
-static int	put_if_special(t_stream *out, t_fmt *fmt, long double nb)
+static int	put_if_special(t_stream *out, const t_fmt *fmt, long double nb)
 {
 	t_sv		value;
 	t_sv		sign;
@@ -48,7 +48,7 @@ static int	put_if_special(t_stream *out, t_fmt *fmt, long double nb)
 	return (1);
 }
 
-void		conv_floating(t_stream *out, t_fmt *fmt, va_list ap)
+void		conv_floating(t_stream *out, const t_fmt *fmt, va_list ap)
 {
 	long double	d;
 
@@ -56,8 +56,6 @@ void		conv_floating(t_stream *out, t_fmt *fmt, va_list ap)
 		d = va_arg(ap, long double);
 	else
 		d = va_arg(ap, double);
-	if (fmt->has_precision == 0)
-		fmt->precision = DTOA_DEFAULT_PRECISION;
 	if (put_if_special(out, fmt, d))
 		return ;
 	if (fp_fabs(d) < (long double)ULONG_MAX && fmt->precision < 20)

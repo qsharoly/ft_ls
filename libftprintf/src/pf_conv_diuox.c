@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 12:55:31 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/10/22 14:00:18 by debby            ###   ########.fr       */
+/*   Updated: 2023/10/17 12:26:09 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 
 #if __linux__
 
-void	conv_ptr(t_stream *out, t_fmt *fmt, va_list ap)
+void	conv_pointer(t_stream *out, const t_fmt *fmt, va_list ap)
 {
 	char	buffer[MAXBUF_UTOA];
 	t_sv	value;
@@ -41,7 +41,7 @@ void	conv_ptr(t_stream *out, t_fmt *fmt, va_list ap)
 
 #else
 
-void	conv_ptr(t_stream *out, t_fmt *fmt, va_list ap)
+void	conv_pointer(t_stream *out, const t_fmt *fmt, va_list ap)
 {
 	char	buffer[MAXBUF_UTOA];
 	t_sv	value;
@@ -54,7 +54,7 @@ void	conv_ptr(t_stream *out, t_fmt *fmt, va_list ap)
 
 #endif
 
-void	conv_signed(t_stream *out, t_fmt *fmt, va_list ap)
+void	conv_signed(t_stream *out, const t_fmt *fmt, va_list ap)
 {
 	char			buffer[MAXBUF_UTOA];
 	t_sv			value;
@@ -76,7 +76,7 @@ void	conv_signed(t_stream *out, t_fmt *fmt, va_list ap)
 	pf_putnbr(out, value, prefix, fmt);
 }
 
-void	conv_unsigned(t_stream *out, t_fmt *fmt, va_list ap)
+void	conv_unsigned(t_stream *out, const t_fmt *fmt, va_list ap)
 {
 	char				buffer[MAXBUF_UTOA];
 	t_sv				value;

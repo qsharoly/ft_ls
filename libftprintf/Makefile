@@ -4,8 +4,8 @@ OBJDIR = obj
 SRCDIR = src
 LFT_DIR ?= ../libft
 LFT = $(LFT_DIR)/libft.a
-CC = gcc
-CCFLAGS += -Wall -Wextra -Werror -O2
+CC ?= gcc
+CCFLAGS += -Wall -Wextra -Werror
 INCFLAGS = -I$(INCDIR) -I$(LFT_DIR)/includes
 
 #Disable union ABI warning on linux gcc
@@ -16,10 +16,8 @@ ifeq ($(CC), gcc)
 endif
 endif
 
-debug = yes
-ifeq ($(debug), yes)
-	CCFLAGS += -g
-endif
+debug ?= -g
+optimize ?= -O2
 
 SRC = ft_printf.c\
 	  ft_snprintf.c\
@@ -34,9 +32,7 @@ SRC = ft_printf.c\
 	  pf_utoa_base.c\
 	  pf_dtoa.c\
 	  pf_dtoa_quick.c\
-	  bignum/big_zero.c\
-	  bignum/big_from_digit.c\
-	  bignum/big_add.c\
+	  bignum/big_init.c\
 	  bignum/big_mul.c\
 	  bignum/big_raise.c\
 	  bignum/big_to_str.c\
@@ -53,6 +49,7 @@ $(shell mkdir -p $(OBJDIR) $(OBJDIR)/bignum $(OBJDIR)/float)
 
 export debug
 export CC
+export optimize
 
 all: $(NAME)
 
@@ -65,7 +62,7 @@ $(NAME): $(OBJ) $(LFT)
 	ar rcs $(NAME) $(OBJ)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c includes/libftprintf.h includes/sv.h
-	$(CC) -c $< -o $@ $(INCFLAGS) $(CCFLAGS)
+	$(CC) $(optimize) $(debug) -c $< -o $@ $(INCFLAGS) $(CCFLAGS)
 $(OBJDIR)/pf_conv_floating.o: includes/float.h
 $(OBJDIR)/pf_dtoa_quick.o: includes/float.h
 $(OBJDIR)/pf_dtoa.o: includes/bignum.h includes/float.h
