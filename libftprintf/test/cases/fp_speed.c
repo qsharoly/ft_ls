@@ -10,13 +10,6 @@ static t_ok	parse_a_number(const char *s, int *value);
 static void parse_arguments(t_printf_call *printf_call, int *n_iterations,
 							int argc, char * const *argv);
 
-typedef enum e_ok {Ok, Fail} t_ok;
-typedef int (*t_printf_call)(const char *, ...);
-
-static t_ok	parse_a_number(const char *s, int *value);
-static void parse_arguments(t_printf_call *printf_call, int *n_iterations,
-							int argc, char * const *argv);
-
 int		main(int argc, char **argv)
 {
 	double	d;
