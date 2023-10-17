@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2023/02/11 04:41:55 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/17 11:27:45 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -854,6 +854,24 @@ void	list_directory(char *current_path, int depth, t_options options,
 	names_arena->offset = names_arena_checkpoint;
 }
 
+static void	putc_impl_ls_custom(int c, t_stream *b)
+{
+	int		written;
+
+	if (b->space_left == 0)
+	{
+		written = write(b->fd, b->data, b->size);
+		if (written < 0)
+			pf_error("write error\n");
+		b->total_written += written;
+		b->pos = 0;
+		b->space_left = b->size;
+	}
+	b->data[b->pos] = c;
+	b->pos++;
+	b->space_left--;
+}
+
 int		main(int argc, const char **argv)
 {
 	t_options	options;
@@ -903,7 +921,7 @@ int		main(int argc, const char **argv)
 	t_arena infos_arena = (t_arena){.memory = memory + names_cap, .capacity = infos_cap};
 
 	char		print_buffer[BUFFER_SIZE];
-	t_stream	out = pf_stream_init(STDOUT, print_buffer, BUFFER_SIZE, putc_impl_printf);
+	t_stream	out = pf_stream_init(STDOUT, print_buffer, BUFFER_SIZE, putc_impl_ls_custom);
 	list_initial_paths(paths, path_count, options, &names_arena, &infos_arena, &out);
 	pf_stream_flush(&out);
 

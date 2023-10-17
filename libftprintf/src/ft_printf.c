@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/27 18:24:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2023/01/20 21:35:40 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/17 11:26:02 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ static void		print_args(t_stream *out, const char *format, va_list ap)
 	}
 }
 
-void	putc_impl_printf(int c, t_stream *b)
+static void	putc_impl_printf(int c, t_stream *b)
 {
 	int		written;
 
