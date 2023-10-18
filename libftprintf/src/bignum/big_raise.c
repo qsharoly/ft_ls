@@ -6,22 +6,11 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/08/06 19:45:05 by qsharoly          #+#    #+#             */
-/*   Updated: 2022/04/08 08:25:46 by debby            ###   ########.fr       */
+/*   Updated: 2023/10/18 16:25:31 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "bignum.h"
-
-void	big_set_to_small(t_big *a, t_twodigit n)
-{
-	a->used = 1;
-	a->val[0] = n % BIG_BASE;
-	while (n /= BIG_BASE)
-	{
-		a->val[a->used] = n % BIG_BASE;
-		a->used++;
-	}
-}
 
 void	big_shallow_swap(t_big *a, t_big *b)
 {

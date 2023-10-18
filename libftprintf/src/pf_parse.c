@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 13:26:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2023/10/17 15:14:10 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/18 16:47:28 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,6 +129,7 @@ size_t	pf_parse_specifier(t_fmt *fmt, const char *str, va_list ap)
 	fmt->type_char = *pos;
 	if (ft_strchr("%diuoxXcspfv", fmt->type_char)==NULL)
 		return (0);
+	pos++;
 	if (!fmt->has_precision)
 	{
 		if (ft_strchr("f", fmt->type_char))

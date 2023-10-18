@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   pf_dtoa.c                                          :+:      :+:    :+:   */
+/*   strround_pf_dtoa.c                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/05/12 04:49:33 by qsharoly          #+#    #+#             */
-/*   Updated: 2023/10/17 12:26:47 by kith             ###   ########.fr       */
+/*   Updated: 2023/10/18 16:59:41 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "float.h"
 
-static void	digits_put(t_sv digits, int split_offset, t_sv sign, const t_fmt *fmt, t_stream *out)
+static void	digits_put(t_sv digits, int decimal_pow, t_sv sign, const t_fmt *fmt, t_stream *out)
 {
 	int		pad_len;
 	int		leading_zeros;
@@ -26,11 +26,11 @@ static void	digits_put(t_sv digits, int split_offset, t_sv sign, const t_fmt *fm
 
 	dot = (fmt->precision > 0 || fmt->alternative_form) ? sv_from_cstr(".") : sv_from_cstr("");
 	prec = fmt->precision;
-	if (split_offset <= 0)
+	if (decimal_pow <= 0)
 		ilen = 1; // single zero before the decimal point.
 	else
-		ilen = ft_min(digits.length, split_offset);
-	pad_len = fmt->min_width - (sign.length + ilen + dot.length + prec);//ft_max(ft_min(digits.length - split_offset, prec), prec));
+		ilen = ft_min(digits.length, decimal_pow);
+	pad_len = fmt->min_width - (sign.length + ilen + dot.length + ft_max(ft_min(digits.length - decimal_pow, prec), prec));
 	leading_zeros = 0;
 	if (fmt->align_right_by_leading_zeros && fmt->align == Align_right)
 	{
@@ -40,11 +40,11 @@ static void	digits_put(t_sv digits, int split_offset, t_sv sign, const t_fmt *fm
 	put_repeat(' ', (fmt->align == Align_right) * pad_len, out);
 	put_sv(sign, out);
 	put_repeat('0', leading_zeros, out);
-	if (split_offset <= 0)
+	if (decimal_pow <= 0)
 	{
 		pf_putc('0', out);
 		put_sv(dot, out);
-		while (split_offset++ < 0 && prec-- > 0)
+		while (decimal_pow++ < 0 && prec-- > 0)
 			pf_putc('0', out);
 		i = 0;
 		while (i < digits.length && prec-- > 0)
