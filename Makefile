@@ -1,12 +1,9 @@
 BIN ?= ft_ls
 
 CC ?= clang
-debug ?= -g
-optimize ?= -O2
-
-CFLAGS += $(debug) $(optimize)
-CFLAGS +=-Iincludes -Ilibft/includes -Ilibftprintf/includes
-CFLAGS +=-Wall -Wextra -Werror
+CCFLAGS ?= -O2 -g
+IFLAGS +=-Iincludes -Ilibft/includes -Ilibftprintf/includes
+WFLAGS +=-Wall -Wextra -Werror
 
 #each module will add to this
 SRC := src/main.c\
@@ -20,7 +17,7 @@ include libftprintf/module
 all:  $(BIN)
 
 $(BIN): $(SRC) src/*.h libft/includes/*.h libftprintf/includes/*.h
-	$(CC) $(CFLAGS) -o $@ $(SRC) $(LIBS)
+	$(CC) $(CCFLAGS) -o $@ $(SRC) $(IFLAGS) $(WFLAGS)
 
 clean:
 fclean: clean
