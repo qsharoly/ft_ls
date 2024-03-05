@@ -21,7 +21,7 @@ void			pf_error(const char *msg)
 	exit(1);
 }
 
-static void		print_args(t_stream *out, const char *format, va_list ap)
+static void		print_args(t_stream *out, const char *format, va_list *ap)
 {
 	t_fmt	fmt;
 	size_t	spec_length;
@@ -68,7 +68,7 @@ int				ft_printf(const char *format, ...)
 
 	b = pf_stream_init(STDOUT, buffer, BUFFER_SIZE, putc_to_fd);
 	va_start(ap, format);
-	print_args(&b, format, ap);
+	print_args(&b, format, &ap);
 	va_end(ap);
 	pf_stream_flush(&b);
 	return (b.total_written);
@@ -83,7 +83,7 @@ int				ft_dprintf(int fd, const char *format, ...)
 
 	b = pf_stream_init(fd, buffer, BUFFER_SIZE, putc_to_fd);
 	va_start(ap, format);
-	print_args(&b, format, ap);
+	print_args(&b, format, &ap);
 	va_end(ap);
 	pf_stream_flush(&b);
 	return (b.total_written);
@@ -95,7 +95,7 @@ int				ft_vdprintf(int fd, const char *format, va_list ap)
 	char		buffer[BUFFER_SIZE];
 
 	b = pf_stream_init(fd, buffer, BUFFER_SIZE, putc_to_fd);
-	print_args(&b, format, ap);
+	print_args(&b, format, &ap);
 	pf_stream_flush(&b);
 	return (b.total_written);
 }

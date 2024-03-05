@@ -16,18 +16,18 @@
 
 #if __APPLE__
 
-void	conv_percent(t_stream *out, const t_fmt *f, va_list ap)
+void	conv_percent(t_stream *out, const t_fmt *f, va_list *ap)
 {
 	char	cto[1];
 
-	(void)ap;
+	(void)*ap;
 	cto[0] = '%';
 	put_sv_padded((t_sv){ cto, 1 }, f->min_width, f->align, out);
 }
 
 #elif __linux__
 
-void	conv_percent(t_stream *out, const t_fmt *f, va_list ap)
+void	conv_percent(t_stream *out, const t_fmt *f, va_list *ap)
 {
 	(void)ap;
 	(void)f;
@@ -36,20 +36,20 @@ void	conv_percent(t_stream *out, const t_fmt *f, va_list ap)
 
 #endif
 
-void	conv_character(t_stream *out, const t_fmt *f, va_list ap)
+void	conv_character(t_stream *out, const t_fmt *f, va_list *ap)
 {
 	char	c[1];
 
-	c[0] = (char)va_arg(ap, int);
+	c[0] = (char)va_arg(*ap, int);
 	put_sv_padded((t_sv){ c, 1 }, f->min_width, f->align, out);
 }
 
-void	conv_cstr(t_stream *out, const t_fmt *f, va_list ap)
+void	conv_cstr(t_stream *out, const t_fmt *f, va_list *ap)
 {
 	char	*s;
 	t_sv	view;
 
-	s = va_arg(ap, char *);
+	s = va_arg(*ap, char *);
 	if (!s)
 	{
 		if (f->has_precision && f->precision < 6)
@@ -65,11 +65,11 @@ void	conv_cstr(t_stream *out, const t_fmt *f, va_list ap)
 	put_sv_padded(view, f->min_width, f->align, out);
 }
 
-void	conv_sv(t_stream *out, const t_fmt *f, va_list ap)
+void	conv_sv(t_stream *out, const t_fmt *f, va_list *ap)
 {
 	t_sv	view;
 
-	view = va_arg(ap, t_sv);
+	view = va_arg(*ap, t_sv);
 	if (!view.start)
 	{
 		if (f->has_precision && f->precision < 6)

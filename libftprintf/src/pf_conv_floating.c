@@ -48,14 +48,14 @@ static int	put_if_special(t_stream *out, const t_fmt *fmt, long double nb)
 	return (1);
 }
 
-void		conv_floating(t_stream *out, const t_fmt *fmt, va_list ap)
+void		conv_floating(t_stream *out, const t_fmt *fmt, va_list *ap)
 {
 	long double	d;
 
 	if (fmt->size == Size_L)
-		d = va_arg(ap, long double);
+		d = va_arg(*ap, long double);
 	else
-		d = va_arg(ap, double);
+		d = va_arg(*ap, double);
 	if (put_if_special(out, fmt, d))
 		return ;
 	if (fp_fabs(d) < (long double)ULONG_MAX && fmt->precision < 20)

@@ -42,7 +42,7 @@ static void	putc_only_count(int c, t_stream *b)
 ** to count how many chars would be written
 */
 
-static void	print_args(t_stream *out, const char *format, va_list ap)
+static void	print_args(t_stream *out, const char *format, va_list *ap)
 {
 	t_fmt	fmt;
 	size_t	spec_length;
@@ -86,7 +86,7 @@ int			ft_snprintf(char *buffer, int bufsz, const char *format, ...)
 	else
 		b = pf_stream_init(STDOUT, buffer, bufsz, putc_to_string_buffer);
 	va_start(ap, format);
-	print_args(&b, format, ap);
+	print_args(&b, format, &ap);
 	va_end(ap);
 	if (buffer && bufsz > 0)
 	{

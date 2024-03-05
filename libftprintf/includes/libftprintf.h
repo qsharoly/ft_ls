@@ -107,7 +107,7 @@ void			put_sv_padded_len(t_sv view, int pad_len, enum e_align align,
 void			put_sv_padded(t_sv view, int min_width, enum e_align align,
 					t_stream *b);
 
-size_t			pf_parse_specifier(t_fmt *fmt, const char *str, va_list ap);
+size_t			pf_parse_specifier(t_fmt *fmt, const char *str, va_list *ap);
 t_sv			sign_prefix(int is_negative, const t_fmt *fmt);
 t_sv			pf_utoa_base(char *buffer, unsigned long long value,
 					unsigned base, int upcase);
@@ -116,14 +116,14 @@ void			pf_putnbr(t_stream *out, t_sv value, t_sv prefix,
 void			pf_dtoa(t_stream *out, long double d, const t_fmt *fmt);
 void			pf_dtoa_quick(t_stream *out, long double nb, const t_fmt *fmt);
 
-void			write_argument(t_stream *out, const t_fmt *fmt, va_list ap);
-void			conv_percent(t_stream *out, const t_fmt *fmt, va_list ap);
-void			conv_character(t_stream *out, const t_fmt *fmt, va_list ap);
-void			conv_cstr(t_stream *out, const t_fmt *fmt, va_list ap);
-void			conv_pointer(t_stream *out, const t_fmt *fmt, va_list ap);
-void			conv_signed(t_stream *out, const t_fmt *fmt, va_list ap);
-void			conv_unsigned(t_stream *out, const t_fmt *fmt, va_list ap);
-void			conv_floating(t_stream *out, const t_fmt *fmt, va_list ap);
-void			conv_sv(t_stream *out, const t_fmt *f, va_list ap);
+void			write_argument(t_stream *out, const t_fmt *fmt, va_list *ap);
+void			conv_percent(t_stream *out, const t_fmt *fmt, va_list *ap);
+void			conv_character(t_stream *out, const t_fmt *fmt, va_list *ap);
+void			conv_cstr(t_stream *out, const t_fmt *fmt, va_list *ap);
+void			conv_pointer(t_stream *out, const t_fmt *fmt, va_list *ap);
+void			conv_signed(t_stream *out, const t_fmt *fmt, va_list *ap);
+void			conv_unsigned(t_stream *out, const t_fmt *fmt, va_list *ap);
+void			conv_floating(t_stream *out, const t_fmt *fmt, va_list *ap);
+void			conv_sv(t_stream *out, const t_fmt *f, va_list *ap);
 
 #endif

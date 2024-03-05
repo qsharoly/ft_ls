@@ -15,14 +15,14 @@
 
 #if __linux__
 
-void	conv_pointer(t_stream *out, const t_fmt *fmt, va_list ap)
+void	conv_pointer(t_stream *out, const t_fmt *fmt, va_list *ap)
 {
 	char	buffer[MAXBUF_UTOA];
 	t_sv	value;
 	char	*prefix;
 	void	*p;
 
-	p = va_arg(ap, void *);
+	p = va_arg(*ap, void *);
 	if (!p)
 	{
 		value = sv_from_cstr("(nil)");
@@ -41,20 +41,20 @@ void	conv_pointer(t_stream *out, const t_fmt *fmt, va_list ap)
 
 #else
 
-void	conv_pointer(t_stream *out, const t_fmt *fmt, va_list ap)
+void	conv_pointer(t_stream *out, const t_fmt *fmt, va_list *ap)
 {
 	char	buffer[MAXBUF_UTOA];
 	t_sv	value;
 	void	*p;
 
-	p = va_arg(ap, void *);
+	p = va_arg(*ap, void *);
 	value = pf_utoa_base(buffer, (unsigned long)p, 16, 0);
 	pf_putnbr(out, value, sv_from_cstr("0x"), fmt);
 }
 
 #endif
 
-void	conv_signed(t_stream *out, const t_fmt *fmt, va_list ap)
+void	conv_signed(t_stream *out, const t_fmt *fmt, va_list *ap)
 {
 	char			buffer[MAXBUF_UTOA];
 	t_sv			value;
@@ -62,11 +62,11 @@ void	conv_signed(t_stream *out, const t_fmt *fmt, va_list ap)
 	long long int	arg;
 
 	if (fmt->size == Size_ll)
-		arg = va_arg(ap, long long);
+		arg = va_arg(*ap, long long);
 	else if (fmt->size == Size_l)
-		arg = va_arg(ap, long);
+		arg = va_arg(*ap, long);
 	else
-		arg = va_arg(ap, int);
+		arg = va_arg(*ap, int);
 	if (fmt->size == Size_hh)
 		arg = (char)arg;
 	else if (fmt->size == Size_h)
@@ -76,7 +76,7 @@ void	conv_signed(t_stream *out, const t_fmt *fmt, va_list ap)
 	pf_putnbr(out, value, prefix, fmt);
 }
 
-void	conv_unsigned(t_stream *out, const t_fmt *fmt, va_list ap)
+void	conv_unsigned(t_stream *out, const t_fmt *fmt, va_list *ap)
 {
 	char				buffer[MAXBUF_UTOA];
 	t_sv				value;
@@ -84,11 +84,11 @@ void	conv_unsigned(t_stream *out, const t_fmt *fmt, va_list ap)
 	unsigned long long	arg;
 
 	if (fmt->size == Size_ll)
-		arg = va_arg(ap, unsigned long long);
+		arg = va_arg(*ap, unsigned long long);
 	else if (fmt->size == Size_l)
-		arg = va_arg(ap, unsigned long);
+		arg = va_arg(*ap, unsigned long);
 	else
-		arg = va_arg(ap, unsigned int);
+		arg = va_arg(*ap, unsigned int);
 	if (fmt->size == Size_hh)
 		arg = (unsigned char)arg;
 	else if (fmt->size == Size_h)

@@ -67,14 +67,14 @@ static const char	*parse_a_number(const char *pos, int *value)
 	return (pos);
 }
 
-static const char	*parse_min_width(const char *pos, t_fmt *fmt, va_list ap)
+static const char	*parse_min_width(const char *pos, t_fmt *fmt, va_list *ap)
 {
 	int		nb;
 
 	if (*pos == '*')
 	{
 		pos++;
-		nb = va_arg(ap, int);
+		nb = va_arg(*ap, int);
 		if (nb < 0)
 			fmt->align = Align_left;
 		fmt->min_width = ft_abs(nb);
@@ -84,7 +84,7 @@ static const char	*parse_min_width(const char *pos, t_fmt *fmt, va_list ap)
 	return (pos);
 }
 
-static const char	*parse_precision(const char *pos, t_fmt *fmt, va_list ap)
+static const char	*parse_precision(const char *pos, t_fmt *fmt, va_list *ap)
 {
 	int		prec;
 
@@ -94,7 +94,7 @@ static const char	*parse_precision(const char *pos, t_fmt *fmt, va_list ap)
 		if (*pos == '*')
 		{
 			pos++;
-			prec = va_arg(ap, int);
+			prec = va_arg(*ap, int);
 			if (prec < 0)
 				return (pos);
 		}
@@ -115,7 +115,7 @@ static const char	*parse_base_and_case(const char *pos, t_fmt *f)
 	return (pos);
 }
 
-size_t	pf_parse_specifier(t_fmt *fmt, const char *str, va_list ap)
+size_t	pf_parse_specifier(t_fmt *fmt, const char *str, va_list *ap)
 {
 	const char	*pos;
 
@@ -140,7 +140,7 @@ size_t	pf_parse_specifier(t_fmt *fmt, const char *str, va_list ap)
 	return (pos - str);
 }
 
-void	write_argument(t_stream *out, const t_fmt *fmt, va_list ap)
+void	write_argument(t_stream *out, const t_fmt *fmt, va_list *ap)
 {
 	switch (fmt->type_char) {
 	case '%':
