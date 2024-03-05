@@ -33,7 +33,7 @@ typedef	struct			s_big
 {
 	t_digit		*val;
 	short int	used;
-	short int	overflow_occured:1;
+	short unsigned int	overflow_occured:1;
 }						t_big;
 
 void	big_init(t_big *a, t_digit mem[BIG_N_DIGITS], t_twodigit n0);

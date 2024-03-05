@@ -172,5 +172,6 @@ void	write_argument(t_stream *out, const t_fmt *fmt, va_list ap)
 		conv_sv(out, fmt, ap);
 		break;
 	default:
+		;
 	}
 }
