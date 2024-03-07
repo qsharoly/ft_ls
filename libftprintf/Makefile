@@ -5,19 +5,17 @@ SRCDIR = src
 LFT_DIR ?= ../libft
 LFT = $(LFT_DIR)/libft.a
 CC ?= gcc
-CCFLAGS += -Wall -Wextra -Werror
+CCFLAGS ?= -O2 -g
+WFLAGS += -Wall -Wextra -Werror
 INCFLAGS = -I$(INCDIR) -I$(LFT_DIR)/includes
 
 #Disable union ABI warning on linux gcc
 UNAME_S = $(shell uname -s)
 ifeq ($(UNAME_S), Linux)
 ifeq ($(CC), gcc)
-	CCFLAGS += -Wno-psabi
+	WFLAGS += -Wno-psabi
 endif
 endif
-
-debug ?= -g
-optimize ?= -O2
 
 SRC = ft_printf.c\
 	  ft_snprintf.c\
@@ -47,9 +45,8 @@ OBJ = $(SRC:%.c=$(OBJDIR)/%.o)
 
 $(shell mkdir -p $(OBJDIR) $(OBJDIR)/bignum $(OBJDIR)/float)
 
-export debug
 export CC
-export optimize
+export CCFLAGS
 
 all: $(NAME)
 
@@ -62,7 +59,7 @@ $(NAME): $(OBJ) $(LFT)
 	ar rcs $(NAME) $(OBJ)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c includes/libftprintf.h includes/sv.h
-	$(CC) $(optimize) $(debug) -c $< -o $@ $(INCFLAGS) $(CCFLAGS)
+	$(CC) $(CCFLAGS) -c $< -o $@ $(INCFLAGS) $(WFLAGS)
 $(OBJDIR)/pf_conv_floating.o: includes/float.h
 $(OBJDIR)/pf_dtoa_quick.o: includes/float.h
 $(OBJDIR)/pf_dtoa.o: includes/bignum.h includes/float.h
