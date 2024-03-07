@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/01/14 15:31:58 by qsharoly          #+#    #+#             */
-/*   Updated: 2023/10/17 15:14:00 by kith             ###   ########.fr       */
+/*   Updated: 2024/03/08 00:44:23 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ typedef struct	s_parts
 
 int				ft_printf(const char *format, ...);
 int				ft_dprintf(int fd, const char *format, ...);
-int				ft_vdprintf(int fd, const char *format, va_list ap);
+int				ft_vdprintf(int fd, const char *format, va_list *ap);
 int				ft_snprintf(char *buf, int max, const char *format, ...);
 
 void			pf_error(const char *msg);

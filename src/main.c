@@ -6,7 +6,7 @@
 /*   By: debby <marvin@42.fr>                       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/03/10 07:56:32 by debby             #+#    #+#             */
-/*   Updated: 2023/10/17 15:57:38 by kith             ###   ########.fr       */
+/*   Updated: 2024/03/08 00:44:32 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,7 +131,7 @@ void	panic(enum e_exitcode status, const char *message_fmt, ...)
 	va_list	ap;
 
 	va_start(ap, message_fmt);
-	ft_vdprintf(STDERR, message_fmt, ap);
+	ft_vdprintf(STDERR, message_fmt, &ap);
 	va_end(ap);
 	exit(status);
 }

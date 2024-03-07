@@ -6,7 +6,7 @@
 /*   By: qsharoly <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/09/27 18:24:37 by qsharoly          #+#    #+#             */
-/*   Updated: 2023/10/17 12:12:33 by kith             ###   ########.fr       */
+/*   Updated: 2024/03/08 00:44:11 by kith             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,13 +89,13 @@ int				ft_dprintf(int fd, const char *format, ...)
 	return (b.total_written);
 }
 
-int				ft_vdprintf(int fd, const char *format, va_list ap)
+int				ft_vdprintf(int fd, const char *format, va_list *ap)
 {
 	t_stream	b;
 	char		buffer[BUFFER_SIZE];
 
 	b = pf_stream_init(fd, buffer, BUFFER_SIZE, putc_to_fd);
-	print_args(&b, format, &ap);
+	print_args(&b, format, ap);
 	pf_stream_flush(&b);
 	return (b.total_written);
 }
