@@ -20,7 +20,7 @@
 
 #define STARTING_DEPTH 0
 #define MAX_DEPTH 25
-#define MAX_BREADTH 2500
+#define MAX_BREADTH 10000
 
 #define BLOCK_HACK 2
 

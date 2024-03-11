@@ -916,8 +916,8 @@ int		main(int argc, const char **argv)
 		paths[0] = ".";
 	}
 	g_compare = cmp_select[options.reverse_sort][options.sort_by_mtime];
-	int names_cap = 1024*1024/8;
-	int infos_cap = 1024*1024*2;
+	int names_cap = 300*1024;
+	int infos_cap = 2000*1024;
 	void *memory = malloc(names_cap + infos_cap);
 	if (!memory)
 	{
